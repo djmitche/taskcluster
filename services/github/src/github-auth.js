@@ -22,50 +22,49 @@ const retryPlugin = (octokit, options) => {
     }
   });
 };
-const Github = require('@octokit/rest').plugin([retryPlugin]);
+const Octokit = require('@octokit/rest').plugin([retryPlugin]);
 
 module.exports = async ({cfg}) => {
-  let github = new Github({
-    promise: Promise,
-  });
-
-  let setupToken = _ => {
+  let setupToken = () => {
     let inteToken = jwt.sign(
       {iss: cfg.github.credentials.integrationId},
       cfg.github.credentials.privatePEM,
       {algorithm: 'RS256', expiresIn: '1m'},
     );
     try {
-      github.authenticate({type: 'app', token: inteToken});
+      return new Octokit({
+        promise: Promise,
+        auth: `app ${inteToken}`,
+      });
     } catch (e) {
       debug('Authentication as app failed!');
       throw e;
     }
-    return github;
   };
 
   // This object insures that the authentication is delayed until we need it.
   // Also, the authentication happens not just once in the beginning, but for each request.
   return {
-    getIntegrationGithub: async _ => {
-      setupToken();
-      return github;
+    getIntegrationGithub: async () => {
+      return setupToken();
     },
     getInstallationGithub: async (inst_id) => {
-      setupToken();
+      const github = setupToken();
       // Authenticating as installation
       var instaToken = (await github.apps.createInstallationToken({
         installation_id: inst_id,
       })).data;
-      let gh = new Github({promise: Promise});
       try {
-        gh.authenticate({type: 'token', token: instaToken.token});
+        let gh = new Octokit({
+          promise: Promise,
+          auth: `token ${instaToken}`,
+        });
         debug(`Authenticated as installation: ${inst_id}`);
+        return gh;
       } catch (e) {
         debug('Authentication as app failed!');
         throw e;
       }
-      return gh;
     },
   };
 };

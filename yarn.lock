@@ -721,26 +721,25 @@
     universal-user-agent "^2.0.1"
     url-template "^2.0.8"
 
-"@octokit/request@2.2.1":
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/@octokit/request/-/request-2.2.1.tgz#1b445e3052842b1f3ab94d68e2606840c85b4265"
-  integrity sha512-enwbVOl3vWWIUuEj0LJRq+mxWNyv95fa13GJitz7qGt/ycYCwtSoVssW3pCqvxS4GlJfHfO2OA+8czIcEF522A==
+"@octokit/request@2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@octokit/request/-/request-2.3.0.tgz#da2672308bcf0b9376ef66f51bddbe5eb87cc00a"
+  integrity sha512-5YRqYNZOAaL7+nt7w3Scp6Sz4P2g7wKFP9npx1xdExMomk8/M/ICXVLYVam2wzxeY0cIc6wcKpjC5KI4jiNbGw==
   dependencies:
     "@octokit/endpoint" "^3.1.1"
     is-plain-object "^2.0.4"
     node-fetch "^2.3.0"
     universal-user-agent "^2.0.1"
 
-"@octokit/rest@^16.0.5":
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/@octokit/rest/-/rest-16.3.2.tgz#8dd08f5b11ce9dfb785669326fb4d904bf91d143"
-  integrity sha512-g1Shr7Bp5K3+o1VdUvQn//8ZIAFFODBi9GFdx4eqV2qZQtWwy28jmCGuS+CphnCj8PlQbFmZtXvmUh5xIRGFcA==
+"@octokit/rest@^16.15.0":
+  version "16.15.0"
+  resolved "https://registry.yarnpkg.com/@octokit/rest/-/rest-16.15.0.tgz#648a88d5de055bcf38976709c5b2bdf1227b926f"
+  integrity sha512-Un+e7rgh38RtPOTe453pT/KPM/p2KZICimBmuZCd2wEo8PacDa4h6RqTPZs+f2DPazTTqdM7QU4LKlUjgiBwWw==
   dependencies:
-    "@octokit/request" "2.2.1"
+    "@octokit/request" "2.3.0"
     before-after-hook "^1.2.0"
     btoa-lite "^1.0.0"
     lodash.get "^4.4.2"
-    lodash.pick "^4.4.0"
     lodash.set "^4.3.2"
     lodash.uniq "^4.5.0"
     octokit-pagination-methods "^1.1.0"
@@ -5694,7 +5693,7 @@ lodash.once@^4.0.0:
   resolved "https://registry.yarnpkg.com/lodash.once/-/lodash.once-4.1.1.tgz#0dd3971213c7c56df880977d504c88fb471a97ac"
   integrity sha1-DdOXEhPHxW34gJd9UEyI+0cal6w=
 
-lodash.pick@^4.2.1, lodash.pick@^4.4.0:
+lodash.pick@^4.2.1:
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/lodash.pick/-/lodash.pick-4.4.0.tgz#52f05610fff9ded422611441ed1fc123a03001b3"
   integrity sha1-UvBWEP/53tQiYRRB7R/BI6AwAbM=
@@ -8571,133 +8570,10 @@ tar@^4:
     safe-buffer "^5.1.2"
     yallist "^3.0.2"
 
-"taskcluster-client@link:clients/client":
-  version "12.2.0"
-  dependencies:
-    debug "^4.0.0"
-    hawk "^7.0.10"
-    lodash "^4.17.4"
-    promise "^8.0.1"
-    slugid "^2.0.0"
-    superagent "^4.0.0"
-    taskcluster-lib-urls "^12.0.0"
-
-"taskcluster-lib-api@link:libraries/api":
-  version "12.8.1"
-  dependencies:
-    aws-sdk "^2.151.0"
-    body-parser "1.18.3"
-    debug "^4.0.0"
-    express "4.16.4"
-    hawk "^7.0.10"
-    lodash "^4.15.0"
-    promise "^8.0.1"
-    slugid "^2.0.0"
-    type-is "^1.6.15"
-    uuid "^3.1.0"
-
-"taskcluster-lib-app@link:libraries/app":
-  version "10.2.0"
-  dependencies:
-    content-security-policy "^0.3.0"
-    debug "^4.0.0"
-    express "4.16.4"
-    express-sslify "1.2.0"
-    hsts "^2.1.0"
-    lodash "4.17.11"
-    morgan "^1.0.0"
-    morgan-debug "^2.0.0"
-    promise "^8.0.1"
-    uuid "^3.3.2"
-
-"taskcluster-lib-azure@link:libraries/azure":
-  version "10.0.0"
-
-"taskcluster-lib-docs@link:libraries/docs":
-  version "11.0.0"
-  dependencies:
-    app-root-dir "^1.0.2"
-    aws-sdk "^2.147.0"
-    debug "^4.0.0"
-    lodash "^4.13.1"
-    mkdirp "^0.5.1"
-    mz "^2.7.0"
-    promisepipe "^3.0.0"
-    recursive-readdir-sync "^1.0.6"
-    s3-upload-stream "^1.0.7"
-    tar-stream "^1.5.4"
-
-"taskcluster-lib-iterate@link:libraries/iterate":
-  version "11.0.0"
-  dependencies:
-    debug "^4.1.0"
-
-"taskcluster-lib-loader@link:libraries/loader":
-  version "11.0.0"
-  dependencies:
-    assume "^2.1.0"
-    debug "^4.1.0"
-    topo-sort "^1.0.0"
-
-"taskcluster-lib-monitor@link:libraries/monitor":
-  version "11.1.1"
-  dependencies:
-    app-root-dir "^1.0.2"
-    aws-sdk "^2.30.0"
-    debug "^4.0.0"
-    lodash "^4.5.1"
-    raven "^2.2.1"
-    statsum "^0.6.0"
-
-"taskcluster-lib-pulse@link:libraries/pulse":
-  version "11.1.1"
-  dependencies:
-    amqplib "^0.5.2"
-    aws-sdk "^2.331.0"
-    debug "^4.0.0"
-
-"taskcluster-lib-references@link:libraries/references":
-  version "1.5.0"
-  dependencies:
-    ajv "^6.5.5"
-    js-yaml "^3.12.1"
-    lodash "^4.17.10"
-    mkdirp "^0.5.1"
-    regex-escape "^3.4.8"
-    rimraf "^2.6.2"
-
-"taskcluster-lib-scopes@link:libraries/scopes":
-  version "10.0.1"
-
-"taskcluster-lib-testing@link:libraries/testing":
-  version "12.1.2"
-  dependencies:
-    debug "^4.0.0"
-    express "4.16.4"
-    hawk "^7.0.10"
-    lodash "^4.17.10"
-    nock "^10.0.0"
-    promise "^8.0.1"
-    superagent "^4.0.0"
-
 taskcluster-lib-urls@^12.0.0:
   version "12.0.0"
   resolved "https://registry.yarnpkg.com/taskcluster-lib-urls/-/taskcluster-lib-urls-12.0.0.tgz#f56190eec9e9597d37a42ad0e7f461e8e0e6732b"
   integrity sha512-OrEFE0m3p/+mGsmIwjttLhSKg3io6MpJLhYtPNjVSZA9Ix8Y5tprN3vM6a3MjWt5asPF6AKZsfT43cgpGwJB0g==
-
-"taskcluster-lib-validate@link:libraries/validate":
-  version "12.0.0"
-  dependencies:
-    ajv "^6.5.0"
-    app-root-dir "^1.0.2"
-    aws-sdk "^2.142.0"
-    debug "^4.0.0"
-    js-yaml "^3.12.1"
-    lodash "^4.5.1"
-    mkdirp "^0.5.1"
-    promise "^8.0.1"
-    rimraf "^2.6.2"
-    walk "^2.3.9"
 
 taskgroup@^4.0.5, taskgroup@^4.2.0:
   version "4.3.1"
@@ -8967,13 +8843,6 @@ typechecker@~2.0.1:
   version "2.0.8"
   resolved "https://registry.yarnpkg.com/typechecker/-/typechecker-2.0.8.tgz#e83da84bb64c584ccb345838576c40b0337db82e"
   integrity sha1-6D2oS7ZMWEzLNFg4V2xAsDN9uC4=
-
-"typed-env-config@link:libraries/typed-env-config":
-  version "3.0.0"
-  dependencies:
-    debug "^4.1.0"
-    js-yaml "^3.12.1"
-    lodash "^4.17.11"
 
 typedarray@^0.0.6:
   version "0.0.6"
