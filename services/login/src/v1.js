@@ -1,4 +1,6 @@
 const APIBuilder = require('taskcluster-lib-api');
+const request = require('superagent');
+const Octokit = require('@octokit/rest');
 
 const builder = new APIBuilder({
   serviceName: 'login',
@@ -78,4 +80,105 @@ builder.declare({
     expires: expires.toJSON(),
     credentials,
   });
+});
+
+builder.declare({
+  method: 'get',
+  route: '/github/start',
+  name: 'startGithubLogin',
+  idempotent: false,
+  title: 'Redirect to GH to login',
+  stability: APIBuilder.stability.experimental,
+  description: '...',
+}, async function(req, res) {
+  const scope = encodeURIComponent('user');
+  // https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/
+  const url = `https://github.com/login/oauth/authorize?client_id=${this.cfg.github.clientId}&redirect_url=${encodeURIComponent('https://github.com/login/oauth/authorize')}&scope=${scope}`;
+  return res.redirect(303, url);
+});
+
+builder.declare({
+  method: 'get',
+  route: '/github/callback',
+  name: 'githubLoginCallback',
+  query: {
+    code: /.*/,
+    state: /.*/,
+  },
+  idempotent: false,
+  title: 'Redirect to GH to login',
+  stability: APIBuilder.stability.experimental,
+  description: '...',
+}, async function(req, res) {
+  const {code} = req.query; // also state, but we're ignoring
+
+  // https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/
+  const accessTokenResponse = await request
+    .post('https://github.com/login/oauth/access_token')
+    .accept('application/json')
+    .send(`client_id=${this.cfg.github.clientId}`)
+    .send(`client_secret=${this.cfg.github.clientSecret}`)
+    .send(`code=${code}`);
+
+  if (accessTokenResponse.body.error) {
+    res.reportError(
+      'InputError',
+      'Error getting Github access token: {{error}} -- {{error_description}}',
+      accessTokenResponse.body);
+  }
+
+  const {access_token, scope, token_type} = accessTokenResponse.body;
+
+  res.redirect(`show_stuff?access_token=${access_token}&token_type=${token_type}&scope=${encodeURIComponent(scope)}`);
+});
+
+builder.declare({
+  method: 'get',
+  route: '/github/show_stuff',
+  name: 'githubShowStuff',
+  query: {
+    access_token: /.*/,
+    token_type: /.*/,
+    scope: /.*/,
+  },
+  idempotent: false,
+  title: '..',
+  stability: APIBuilder.stability.experimental,
+  description: '...',
+}, async function(req, res) {
+  const {access_token, token_type, scope} = req.query;
+  const result = {};
+
+  // use that access token to try to get some details about the user
+  const octokit = new Octokit({
+    auth: `${token_type} ${access_token}`,
+  });
+
+  try {
+    const au = await octokit.users.getAuthenticated();
+    result.login = au.data.login;
+    result.ghUserId = au.data.id;
+    result.scopes = [`assume:login-identity:github|${au.data.id}|${au.data.login}`];
+
+    // list teams for auth'd user
+    const teams = await octokit.paginate('GET /user/teams');
+    result.teams = teams.map(team => ({team: team.slug, org: team.organization.login}));
+    teams
+      .map(team => `${team.organization.login}/${team.slug}`)
+      .forEach(team => result.scopes.push(`assume:github:team:${team}`));
+
+    const orgs = await octokit.paginate('GET /user/memberships/orgs');
+    result.orgs = orgs.map(om => om.organization.login);
+
+    orgs
+      .filter(om => om.role === 'admin')
+      .map(om => om.organization.login)
+      .forEach(org => result.scopes.push(`assume:github:org-admin:${org}`));
+
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+
+  res.reply(result);
 });
