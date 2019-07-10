@@ -2,13 +2,6 @@ const assert = require('assert');
 const libUrls = require('taskcluster-lib-urls');
 
 class Provider {
-
-  /**
-   * There should not be any provisioning-specific work in the constructor.
-   * This should just be setting up things like credentials needed to access
-   * a cloud provider for terminating/listing instances. Any provisioning
-   * logic should be started in `initiate` below.
-   */
   constructor({
     providerId,
     monitor,
@@ -31,12 +24,6 @@ class Provider {
     this.WorkerPoolError = WorkerPoolError;
   }
 
-  /**
-   * This is called at process start-up for all configured providers (that is,
-   * once for each providerId).  It can be used as an "async constructor" such
-   * as to set up object properties that must be awaited.  It can also be used
-   * to construct provider-global objects in a cloud service, for example.
-   */
   async setup() {
   }
 
@@ -55,11 +42,6 @@ class Provider {
   async terminate() {
   }
 
-  /**
-   * Given a worker pool configuration, this will ensure that it matches the
-   * configuration schema for the implementation of a provider.
-   * Returns null if everything is fine and an error message if not.
-   */
   validate(config) {
     assert(this.configSchema); // This must be set up by a provider impl
     return this.validator(config, libUrls.schema(this.rootUrl, 'worker-manager', `v1/${this.configSchema}.yml`));
