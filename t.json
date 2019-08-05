@@ -1,0 +1,50 @@
+{
+  "provisionerId": "aws-provisioner-v1",
+  "workerType": "github-worker",
+  "schedulerId": "taskcluster-github",
+  "dependencies": [],
+  "requires": "all-completed",
+  "routes": [],
+  "priority": "lowest",
+  "retries": 5,
+  "scopes": [
+    "assume:project:taskcluster:tests:taskcluster",
+    "docker-worker:cache:project-taskcluster-test-*"
+  ],
+  "payload": {
+    "features": {
+      "taskclusterProxy": true
+    },
+    "env": {
+      "DEBUG": "",
+      "CODECOV_NAME": "taskcluster-queue",
+      "CI_BUILD_URL": "https://tools.taskcluster.net/tasks/XuMsBhTATxi9yi6aiu3ILA",
+      "GIT_BRANCH": "master",
+      "NO_TEST_SKIP": true,
+      "YARN_CACHE_FOLDER": "/cache",
+      "XDG_CACHE_HOME": "/cache"
+    },
+    "maxRunTime": 1200,
+    "onExitStatus": {
+      "retry": [
+        99
+      ]
+    },
+    "cache": {
+      "project-taskcluster-test-yarn-cache": "/cache"
+    },
+    "image": "node:10.16.0",
+    "command": [
+      "/bin/bash",
+      "-lc",
+      "git clone --quiet --depth=20 --no-single-branch git://github.com/djmitche/taskcluster.git taskcluster && cd taskcluster && git checkout 1a634fd34e19faff046775e5efa48ef2ac467e09 && { yarn --frozen-lockfile || exit 99; } && eval \"$(yarn -s shared-secrets)\" && cd services/queue && DEBUG=* ../../node_modules/.bin/mocha test/dependency_test.js"
+    ]
+  },
+  "metadata": {
+    "name": "taskcluster-queue",
+    "description": "https://bugzilla.mozilla.org/show_bug.cgi?id=1561679",
+    "owner": "taskcluster-internal@mozilla.com",
+    "source": "https://api.github.com/repos/djmitche/taskcluster"
+  },
+  "tags": {}
+}
