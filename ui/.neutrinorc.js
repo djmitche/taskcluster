@@ -188,6 +188,12 @@ module.exports = {
       }));
     },
     karma({
+      client: {
+        mocha: {
+          ui: 'tdd',
+          timeout: '30s',
+        },
+      },
       plugins: [
         'karma-firefox-launcher',
       ],
