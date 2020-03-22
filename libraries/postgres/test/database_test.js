@@ -548,4 +548,18 @@ helper.dbSuite(path.basename(__filename), function() {
     // but hey, it won't work!
     assert(!Database._validUsernamePrefix(`'; drop table clients`));
   });
+
+  suite('_getTableColumns', function() {
+    test('gets table columns in a useful format', async function() {
+      await Database.upgrade({schema, adminDbUrl: helper.dbUrl, usernamePrefix: 'test'});
+      const db = new Database({urlsByMode: {admin: helper.dbUrl}});
+      assert.deepEqual(
+        await db._getTableColumns(), {
+          testing: {
+            a: {type: 'integer', notnull: false},
+            b: {type: 'integer', notnull: false},
+          },
+        });
+    });
+  });
 });

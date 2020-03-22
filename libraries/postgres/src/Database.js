@@ -273,6 +273,43 @@ class Database {
     });
   }
 
+  async _getTableColumns() {
+    return await this._withClient('admin', async client => {
+      const tables = {};
+
+      const tablesres = await client.query(`
+        select
+          c.relname as tablename,
+          c.oid as oid
+        from
+          pg_catalog.pg_class c
+          left join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+        where
+          c.relkind='r' and
+          n.nspname = 'public' and
+          c.relname != 'tcversion'
+      `);
+
+      for (const {tablename, oid} of tablesres.rows) {
+        const rowsres = await client.query(`
+          select
+            attname,
+            pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
+            a.attnotnull as notnull
+          from
+            pg_catalog.pg_attribute a
+          where
+            -- attnum's < 0 are internal
+            a.attrelid=$1 and a.attnum > 0
+        `, [oid]);
+        tables[tablename] = Object.fromEntries(
+          rowsres.rows.map(({attname, type, notnull}) => ([attname, {type, notnull}])));
+      }
+
+      return tables;
+    });
+  }
+
   async _createExtensions() {
     await this._withClient('admin', async client => {
       for (let ext of EXTENSIONS) {
