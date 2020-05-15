@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const {Loader} = require('taskcluster-lib-loader');
 const path = require('path');
 const yaml = require('js-yaml');
 const fs = require('fs');
@@ -7,6 +8,13 @@ const assert = require('assert');
 const buildSchema = require('./schema');
 
 const REPO_ROOT = path.join(__dirname, '../../../');
+
+Loader.registerComponent({
+  name: 'cfg',
+  requiredParameters: ['profile', 'serviceName'],
+}, async (loader, {profile, serviceName}) => {
+  return config({profile, serviceName});
+});
 
 const config = ({
   profile = process.env.NODE_ENV,

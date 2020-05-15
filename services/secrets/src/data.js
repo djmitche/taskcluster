@@ -4,6 +4,8 @@ const Entity = require('taskcluster-lib-entities');
 
 let Secret = Entity.configure({
   version: 1,
+  name: 'Secret',
+  postgresTableName: 'secrets_entities',
   signEntities: true,
   partitionKey: Entity.keys.ConstantKey('secrets'),
   rowKey: Entity.keys.StringKey('name'),

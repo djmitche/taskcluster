@@ -27,6 +27,8 @@ helper.dbSuite(path.basename(__filename), function() {
   };
   const configuredTestTable = Entity.configure({
     version: 1,
+    name: 'Entity',
+    postgresTableName: 'test_entities',
     partitionKey: Entity.keys.HashKey('id', 'data'),
     rowKey: Entity.keys.HashKey('text1', 'text2'),
     properties,

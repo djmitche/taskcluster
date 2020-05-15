@@ -1,11 +1,29 @@
 require('../../prelude');
+/*
 const loader = require('taskcluster-lib-loader');
 const {MonitorManager} = require('taskcluster-lib-monitor');
 const libReferences = require('taskcluster-lib-references');
-const taskcluster = require('taskcluster-client');
 const config = require('taskcluster-lib-config');
 const taskqueue = require('./TaskQueue');
+*/
 
+const {Loader} = require('taskcluster-lib-loader/src/loader');
+
+const serviceName = 'built-in-workers';
+
+if (!module.parent) {
+  const loader = new Loader();
+  loader.load('monitor', {
+    serviceName,
+    profile: process.env.NODE_ENV,
+    process: process.argv[2],
+  }).catch(err => {
+    console.log(err);
+    process.exit(1);
+  });
+}
+
+/*
 const load = loader({
   cfg: {
     requires: ['profile'],
@@ -70,3 +88,4 @@ if (!module.parent) {
 }
 
 module.exports = load;
+*/

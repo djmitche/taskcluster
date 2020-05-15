@@ -1,4 +1,5 @@
 const assert = require('assert');
+const {Loader} = require('taskcluster-lib-loader');
 const _ = require('lodash');
 const utils = require('./utils');
 const errors = require('./middleware/errors');
@@ -27,6 +28,37 @@ const ping = {
     });
   },
 };
+
+/**
+ * A loader component that loads the API with the given serviceName,
+ * looking for each element of the context in the loader as well.
+ */
+Loader.registerComponent({
+  name: 'api',
+  requiredParameters: ['serviceName'],
+}, async (loader, parameters) => {
+  const {serviceName} = parameters;
+  const builder = APIBuilder.instances[serviceName];
+  if (!builder) {
+    throw new Error(`No APIBuilder declared for service ${serviceName}`);
+  }
+
+  const context = {};
+  for (let c of builder.context) {
+    context[c] = await loader.load(c, parameters);
+  }
+
+  const cfg = await loader.load('cfg', parameters);
+  const monitor = await loader.load('monitor', parameters);
+  const schemaset = await loader.load('schemaset', parameters);
+
+  return await builder.build({
+    rootUrl: cfg.taskcluster.rootUrl,
+    context,
+    monitor: monitor.childMonitor('api'),
+    schemaset,
+  });
+});
 
 /**
  * Create an APIBuilder; see README for syntax
@@ -60,6 +92,9 @@ class APIBuilder {
     this.errorCodes = options.errorCodes;
     this.entries = [ping];
     this.hasSchemas = false;
+
+    // store a reference for the loader component
+    APIBuilder.instances[options.serviceName] = this;
   }
 
   /**
@@ -208,6 +243,7 @@ class APIBuilder {
     return reference;
   }
 }
+APIBuilder.instances = {};
 
 /** Stability levels offered by API method */
 const stability = {

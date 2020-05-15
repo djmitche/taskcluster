@@ -1,94 +1,34 @@
 require('../../prelude');
-const Debug = require('debug');
-const tcdb = require('taskcluster-db');
-const builder = require('../src/api');
-const data = require('../src/data');
-const loader = require('taskcluster-lib-loader');
-const SchemaSet = require('taskcluster-lib-validate');
-const {MonitorManager} = require('taskcluster-lib-monitor');
-const {App} = require('taskcluster-lib-app');
-const libReferences = require('taskcluster-lib-references');
-const taskcluster = require('taskcluster-client');
-const config = require('taskcluster-lib-config');
+const {Loader} = require('taskcluster-lib-loader');
 
-let debug = Debug('secrets:server');
+require('taskcluster-lib-config');
+require('taskcluster-db');
+require('taskcluster-lib-validate');
+require('taskcluster-lib-app');
+require('../src/api');
+require('../src/data');
 
-let load = loader({
-  cfg: {
-    requires: ['profile'],
-    setup: ({profile}) => config({
-      profile,
-      serviceName: 'secrets',
-    }),
-  },
+const serviceName = 'secrets';
 
-  monitor: {
-    requires: ['process', 'profile', 'cfg'],
-    setup: ({process, profile, cfg}) => MonitorManager.setup({
-      serviceName: 'secrets',
-      processName: process,
-      verify: profile !== 'production',
-      ...cfg.monitoring,
-    }),
-  },
+if (!module.parent) {
+  const loader = new Loader();
+  loader.load(process.argv[2], {
+    serviceName,
+    profile: process.env.NODE_ENV,
+    process: process.argv[2],
+  }).catch(err => {
+    console.log(err);
+    process.exit(1);
+  });
+}
 
-  schemaset: {
-    requires: ['cfg'],
-    setup: ({cfg}) => new SchemaSet({
-      serviceName: 'secrets',
-    }),
-  },
-
-  db: {
-    requires: ['cfg', 'process', 'monitor'],
-    setup: ({cfg, process, monitor}) => tcdb.setup({
-      readDbUrl: cfg.postgres.readDbUrl,
-      writeDbUrl: cfg.postgres.writeDbUrl,
-      serviceName: 'secrets',
-      monitor: monitor.childMonitor('db'),
-      statementTimeout: process === 'server' ? 30000 : 0,
-    }),
-  },
-
-  Secret: {
-    requires: ['cfg', 'monitor', 'db', 'process'],
-    setup: ({cfg, monitor, db, process}) => data.Secret.setup({
-      db,
-      serviceName: 'secrets',
-      tableName: cfg.app.secretsTableName,
-      cryptoKey: cfg.azure.cryptoKey,
-      signingKey: cfg.azure.signingKey,
-      monitor: monitor.childMonitor('table.secrets'),
-    }),
-  },
-
+/*
   generateReferences: {
     requires: ['cfg', 'schemaset'],
     setup: ({cfg, schemaset}) => libReferences.fromService({
       schemaset,
       references: [builder.reference(), MonitorManager.reference('secrets')],
     }).generateReferences(),
-  },
-
-  api: {
-    requires: ['cfg', 'Secret', 'schemaset', 'monitor'],
-    setup: async ({cfg, Secret, schemaset, monitor}) => builder.build({
-      rootUrl: cfg.taskcluster.rootUrl,
-      context: {cfg, Secret},
-      monitor: monitor.childMonitor('api'),
-      schemaset,
-    }),
-  },
-
-  server: {
-    requires: ['cfg', 'api'],
-    setup: ({cfg, api}) => App({
-      port: Number(process.env.PORT || cfg.server.port),
-      env: cfg.server.env,
-      forceSSL: cfg.server.forceSSL,
-      trustProxy: cfg.server.trustProxy,
-      apis: [api],
-    }),
   },
 
   expire: {
@@ -113,5 +53,6 @@ let load = loader({
 if (!module.parent) {
   load.crashOnError(process.argv[2]);
 }
+*/
 
-module.exports = load;
+//module.exports = load;

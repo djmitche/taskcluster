@@ -9,6 +9,7 @@ const csp = require('content-security-policy');
 const uuidv4 = require('uuid/v4');
 const path = require('path');
 const fs = require('fs');
+const {Loader} = require('taskcluster-lib-loader');
 
 const REPO_ROOT = path.join(__dirname, '../../../');
 
@@ -168,6 +169,21 @@ const app = async (options) => {
 
   return app.createServer();
 };
+
+Loader.registerComponent({
+  name: 'app',
+}, async (loader, parameters) => {
+  const cfg = await loader.load('cfg', parameters);
+  const api = await loader.load('api', parameters);
+
+  return await app({
+    port: Number(process.env.PORT || cfg.server.port),
+    env: cfg.server.env,
+    forceSSL: cfg.server.forceSSL,
+    trustProxy: cfg.server.trustProxy,
+    apis: [api],
+  });
+});
 
 // Export app creation utility
 module.exports = {App: app, traceMiddleware};

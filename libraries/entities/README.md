@@ -6,6 +6,12 @@ This library sits on top of
 is to facilitate the migration of our data from Azure to Postgres. Once the data has been migrated,
 the plan is to eventually stop using and archive this library.
 
+## Differences from Azure-Entities
+
+The `configure` function must be given arguments `name` (the name of the class,
+e.g., `Secret`) and `postgresTableName` (the name of the corresponding postgres
+table, e.g., `secrets_entities`).
+
 ## Functions Exposed by a Postgres Table
 
 For the first stage of the transition from azure to postgres, tables that taskcluster-lib-entities understand all

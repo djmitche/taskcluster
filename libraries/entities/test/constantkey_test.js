@@ -27,6 +27,8 @@ helper.dbSuite(path.basename(__filename), function() {
     };
     const configuredTestTable = Entity.configure({
       version: 1,
+      name: 'Entity',
+      postgresTableName: 'test_entities',
       partitionKey: Entity.keys.ConstantKey(slugid.v4()),
       rowKey: Entity.keys.ConstantKey(slugid.v4()),
       properties,
@@ -59,6 +61,8 @@ helper.dbSuite(path.basename(__filename), function() {
     };
     const configuredTestTable = Entity.configure({
       version: 1,
+      name: 'Entity',
+      postgresTableName: 'test_entities',
       partitionKey: Entity.keys.CompositeKey('taskId', 'runId'),
       rowKey: Entity.keys.ConstantKey('task-info'),
       properties,

@@ -1,4 +1,5 @@
 const debug = require('debug')('taskcluster-lib-validate');
+const {Loader} = require('taskcluster-lib-loader');
 const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
@@ -11,6 +12,13 @@ const {renderConstants, checkRefs} = require('./util');
 
 const REPO_ROOT = path.join(__dirname, '../../../');
 const ABSTRACT_SCHEMA_ROOT_URL = '';
+
+Loader.registerComponent({
+  name: 'schemaset',
+  requiredParameters: ['serviceName'],
+}, async (loader, {serviceName}) => {
+  return new SchemaSet({serviceName});
+});
 
 class SchemaSet {
   constructor(options) {

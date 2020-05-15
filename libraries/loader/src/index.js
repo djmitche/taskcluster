@@ -131,3 +131,4 @@ function loader(componentDirectory, virtualComponents = {}) {
 }
 
 module.exports = loader;
+module.exports.Loader = require('./loader').Loader; // TODO

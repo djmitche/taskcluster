@@ -31,6 +31,8 @@ helper.dbSuite(path.basename(__filename), function() {
       db = await helper.withDb({ schema, serviceName });
       const configuredTestTable = Entity.configure({
         version: 1,
+        name: 'Entity',
+        postgresTableName: 'test_entities',
         partitionKey: Entity.keys.StringKey('taskId'),
         rowKey: Entity.keys.StringKey('provisionerId'),
         properties,
@@ -56,6 +58,8 @@ helper.dbSuite(path.basename(__filename), function() {
       };
       const configuredTestTable = Entity.configure({
         version: 1,
+        name: 'Entity',
+        postgresTableName: 'test_entities',
         partitionKey: Entity.keys.StringKey('taskId'),
         rowKey: Entity.keys.StringKey('provisionerId'),
         properties,
@@ -82,12 +86,16 @@ helper.dbSuite(path.basename(__filename), function() {
       const configuredTestTable = Entity
         .configure({
           version: 1,
+          name: 'Entity',
+          postgresTableName: 'test_entities',
           partitionKey: Entity.keys.StringKey('taskId'),
           rowKey: Entity.keys.StringKey('provisionerId'),
           properties,
         })
         .configure({
           version: 2,
+          name: 'Entity',
+          postgresTableName: 'test_entities',
           properties: {
             ...properties,
             workerType: Entity.types.SlugId,

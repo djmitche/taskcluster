@@ -182,6 +182,8 @@ helper.dbSuite(path.basename(__filename), function() {
           db = await helper.withDb({ schema, serviceName });
           let Item = Entity.configure({
             version: 1,
+            name: 'Entity',
+            postgresTableName: 'test_entities',
             partitionKey: Entity.keys.StringKey('id'),
             rowKey: Entity.keys.StringKey('name'),
             properties: {
@@ -265,6 +267,10 @@ helper.dbSuite(path.basename(__filename), function() {
           db = await helper.withDb({ schema, serviceName });
           let Item = Entity.configure({
             version: 1,
+            name: 'Entity',
+            postgresTableName: 'test_entities',
+            name: 'Entity',
+            postgresTableName: 'test_entities',
             partitionKey: Entity.keys.StringKey('id'),
             rowKey: Entity.keys.ConstantKey('signing-test-item'),
             signEntities: true,
@@ -308,6 +314,10 @@ helper.dbSuite(path.basename(__filename), function() {
           db = await helper.withDb({ schema, serviceName });
           let ItemClass = Entity.configure({
             version: 1,
+            name: 'Entity',
+            postgresTableName: 'test_entities',
+            name: 'Entity',
+            postgresTableName: 'test_entities',
             partitionKey: Entity.keys.StringKey('id'),
             rowKey: Entity.keys.ConstantKey('signing-test-item'),
             signEntities: true,

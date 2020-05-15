@@ -15,6 +15,7 @@ const {
   MAX_MODIFY_ATTEMPTS,
   CONTINUATION_TOKEN_PATTERN,
 } = require('./constants');
+const {Loader} = require('taskcluster-lib-loader');
 
 /** Fixed time comparison of two buffers */
 const fixedTimeComparison = function(b1, b2) {
@@ -653,9 +654,51 @@ class Entity {
     ConfiguredEntity.__partitionKey = ConfiguredEntity.__partitionKeyDefinition(ConfiguredEntity.mapping);
     ConfiguredEntity.__rowKey = ConfiguredEntity.__rowKeyDefinition(ConfiguredEntity.mapping);
 
+    assert(configureOptions.name, "name is required in Entity.configure(..)");
+    assert(configureOptions.postgresTableName, "postgresTableName is required in Entity.configure(..)");
+    createLoader(configureOptions.name, configureOptions.postgresTableName, configureOptions.context, ConfiguredEntity);
+
     return ConfiguredEntity;
   }
 }
+
+const CONFIGURED_ENTITIES = new Map();
+
+const createLoader = (name, postgresTableName, contextNames, ConfiguredEntity) => {
+  const existed = CONFIGURED_ENTITIES.has(name);
+  CONFIGURED_ENTITIES.set(name, ConfiguredEntity);
+
+  // only register one loader, on the first call to configure, but keep the ConfiguredEntity
+  // class from the last call to configure.
+  if (existed) {
+    return;
+  }
+
+  Loader.registerComponent({
+    name: name,
+    requireParameters: ['serviceName'],
+  }, async (loader, parameters) => {
+    const {serviceName} = parameters;
+    const cfg = await loader.load('cfg', parameters);
+    const db = await loader.load('db', parameters);
+    const monitor = await loader.load('monitor', parameters);
+
+    const context = {};
+    for (let c of contextNames || []) {
+      context[c] = await loader.load(c, parameters);
+    }
+
+    const ConfiguredEntity = CONFIGURED_ENTITIES.get(name);
+    return await ConfiguredEntity.setup({
+      db,
+      serviceName,
+      tableName: postgresTableName,
+      cryptoKey: ConfiguredEntity.__hasEncrypted ? cfg.azure.cryptoKey : undefined,
+      signingKey: ConfiguredEntity.__hasSigning ? cfg.azure.signingKey : undefined,
+      monitor: monitor.childMonitor('table.' + name.toLowerCase()),
+    });
+  });
+};
 
 Entity.op = op;
 Entity.keys = keys;
