@@ -6,6 +6,55 @@ const sanitizeHtml = require('sanitize-html');
 const marked = require('marked');
 const Email = require('email-templates');
 const nodemailer = require('nodemailer');
+const {MonitorManager} = require('taskcluster-lib-monitor');
+
+MonitorManager.register({
+  name: 'email',
+  title: 'Email Sent',
+  type: 'email',
+  version: 1,
+  level: 'info',
+  description: 'Email has been sent.',
+  fields: {
+    address: 'The requested recepient of the email.',
+  },
+});
+
+MonitorManager.register({
+  name: 'pulse',
+  title: 'Pulse Event Published',
+  type: 'pulse',
+  version: 1,
+  level: 'info',
+  description: 'A pulse event has been published.',
+  fields: {
+    routingKey: 'The requested routingKey of the message.',
+  },
+});
+
+MonitorManager.register({
+  name: 'irc',
+  title: 'IRC Message Sent',
+  type: 'irc',
+  version: 1,
+  level: 'info',
+  description: 'An irc message has been sent.',
+  fields: {
+    dest: 'A user or channel. Will begin with "#" if a channel.',
+  },
+});
+
+MonitorManager.register({
+  name: 'matrix',
+  title: 'Matrix Message Sent',
+  type: 'matrix',
+  version: 1,
+  level: 'info',
+  description: 'A matrix message has been sent.',
+  fields: {
+    dest: 'A user or room.',
+  },
+});
 
 /**
  * Object to send notifications, so the logic can be re-used in both the pulse

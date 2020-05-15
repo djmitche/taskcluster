@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const {APIBuilder} = require('taskcluster-lib-api');
 const _ = require('lodash');
 const Entity = require('taskcluster-lib-entities');
+const {MonitorManager} = require('taskcluster-lib-monitor');
 
 // Strips/replaces undesirable characters which GitHub allows in
 // repository/organization names (notably .)
@@ -157,6 +158,21 @@ async function findTCStatus(github, owner, repo, branch, configuration) {
   }
   return statuses.find(statusObject => statusObject.creator.id === taskclusterBot.id);
 }
+
+MonitorManager.register({
+  name: 'webhookReceived',
+  title: 'Webhook Received',
+  type: 'webhook-received',
+  version: 1,
+  level: 'notice',
+  description: `A valid webhook payload was received from GitHub.`,
+  fields: {
+    eventId: 'The GUID of this webhook delivery (`X-GitHub-Delivery` header)',
+    eventType: 'The event type (`X-GitHub-Event` header)',
+    installationId: 'The installation ID associated with this event (`installation.id`), if any',
+  },
+});
+
 
 /** API end-point for version v1/
  */

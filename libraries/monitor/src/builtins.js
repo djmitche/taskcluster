@@ -1,3 +1,5 @@
+const MonitorManager = require('./monitormanager');
+
 const BUILTINS = [
   {
     name: 'periodic',
@@ -132,6 +134,5 @@ const BUILTINS = [
   },
 ];
 
-exports.registerBuiltins = (monitorManager) => {
-  BUILTINS.forEach(builtin => monitorManager.register(builtin));
-};
+// TODO: just call MonitorManager.register, no loop
+BUILTINS.forEach(builtin => MonitorManager.register(builtin));

@@ -6,9 +6,9 @@ const Intree = require('./intree');
 const data = require('./data');
 const Ajv = require('ajv');
 const config = require('taskcluster-lib-config');
-const monitorManager = require('./monitor');
 const SchemaSet = require('taskcluster-lib-validate');
 const loader = require('taskcluster-lib-loader');
+const {MonitorManager} = require('taskcluster-lib-monitor');
 const libReferences = require('taskcluster-lib-references');
 const {App} = require('taskcluster-lib-app');
 const tcdb = require('taskcluster-db');
@@ -26,7 +26,8 @@ const load = loader({
 
   monitor: {
     requires: ['process', 'profile', 'cfg'],
-    setup: ({process, profile, cfg}) => monitorManager.setup({
+    setup: ({process, profile, cfg}) => MonitorManager.setup({
+      serviceName: 'github',
       processName: process,
       verify: profile !== 'production',
       ...cfg.monitoring,
@@ -54,7 +55,7 @@ const load = loader({
     requires: ['cfg', 'schemaset'],
     setup: ({cfg, schemaset}) => libReferences.fromService({
       schemaset,
-      references: [builder.reference(), exchanges.reference(), monitorManager.reference()],
+      references: [builder.reference(), exchanges.reference(), MonitorManager.reference('github')],
     }).generateReferences(),
   },
 

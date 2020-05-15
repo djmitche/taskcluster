@@ -1,4 +1,21 @@
 const loaders = require('./loaders');
+const {MonitorManager} = require('taskcluster-lib-monitor');
+
+MonitorManager.register({
+  name: 'requestReceived',
+  title: 'Request Received',
+  type: 'request-received',
+  version: 1,
+  level: 'notice',
+  description: 'A GraphQL request has been received. The traceId/request is at the top-level of the log message, above these fields.',
+  fields: {
+    query: 'The graphQL query string',
+    operationName: `
+      The name of the graphql query performed. If the operation is anonymous
+      (i.e., the operation is query { ... } instead of query NamedQuery { ... })
+      , then operationName is null.`,
+  },
+});
 
 module.exports = ({ clients, pulseEngine, rootUrl, strategies, cfg, monitor }) => ({ req, connection }) => {
   if (req) {

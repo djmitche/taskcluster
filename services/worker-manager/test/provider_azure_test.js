@@ -3,7 +3,6 @@ const assert = require('assert');
 const helper = require('./helper');
 const {FakeAzure} = require('./fake-azure');
 const {AzureProvider} = require('../src/providers/azure');
-const monitorManager = require('../src/monitor');
 const testing = require('taskcluster-lib-testing');
 const forge = require('node-forge');
 const fs = require('fs');
@@ -38,6 +37,11 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       name: 'some ip',
     },
   };
+
+  let monitor;
+  suiteSetup(async function() {
+    monitor = await helper.load('monitor');
+  });
 
   setup(async function() {
     fakeAzure = new FakeAzure();
@@ -409,7 +413,7 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.error.includes('Too few bytes to read ASN.1 value.'));
+      assert(monitor.manager.messages[0].Fields.error.includes('Too few bytes to read ASN.1 value.'));
     });
 
     test('document is empty', async function() {
@@ -422,7 +426,7 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.error.includes('Too few bytes to parse DER.'));
+      assert(monitor.manager.messages[0].Fields.error.includes('Too few bytes to parse DER.'));
     });
 
     test('message does not match signature', async function() {
@@ -436,7 +440,7 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.message.includes('Error verifying PKCS#7 message signature'));
+      assert(monitor.manager.messages[0].Fields.message.includes('Error verifying PKCS#7 message signature'));
     });
 
     test('malformed signature', async function() {
@@ -450,7 +454,7 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.message.includes('Error verifying PKCS#7 message signature'));
+      assert(monitor.manager.messages[0].Fields.message.includes('Error verifying PKCS#7 message signature'));
     });
 
     test('expired message', async function() {
@@ -464,7 +468,7 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.message.includes('Expired message'));
+      assert(monitor.manager.messages[0].Fields.message.includes('Expired message'));
     });
 
     test('bad cert', async function() {
@@ -482,8 +486,8 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.message.includes('Error verifying certificate chain'));
-      assert(monitorManager.messages[0].Fields.error.includes('Certificate is not trusted'));
+      assert(monitor.manager.messages[0].Fields.message.includes('Error verifying certificate chain'));
+      assert(monitor.manager.messages[0].Fields.error.includes('Certificate is not trusted'));
       provider.caStore = oldCaStore;
     });
 
@@ -498,7 +502,7 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.error.includes('already running'));
+      assert(monitor.manager.messages[0].Fields.error.includes('already running'));
     });
 
     test('wrong vmID', async function() {
@@ -518,10 +522,10 @@ helper.secrets.mockSuite(testing.suiteName(), ['db'], function(mock, skipping) {
       await assert.rejects(() =>
         provider.registerWorker({workerPool, worker, workerIdentityProof}),
       /Signature validation error/);
-      assert(monitorManager.messages[0].Fields.message.includes('vmId mismatch'));
-      assert.equal(monitorManager.messages[0].Fields.vmId, vmId);
-      assert.equal(monitorManager.messages[0].Fields.expectedVmId, 'wrongeba3-807b-46dd-aef5-78aaf9193f71');
-      assert.equal(monitorManager.messages[0].Fields.workerId, 'some-vm');
+      assert(monitor.manager.messages[0].Fields.message.includes('vmId mismatch'));
+      assert.equal(monitor.manager.messages[0].Fields.vmId, vmId);
+      assert.equal(monitor.manager.messages[0].Fields.expectedVmId, 'wrongeba3-807b-46dd-aef5-78aaf9193f71');
+      assert.equal(monitor.manager.messages[0].Fields.workerId, 'some-vm');
     });
 
     test('sweet success', async function() {

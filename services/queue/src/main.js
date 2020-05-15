@@ -15,13 +15,17 @@ let WorkClaimer = require('./workclaimer');
 let WorkerInfo = require('./workerinfo');
 let loader = require('taskcluster-lib-loader');
 let config = require('taskcluster-lib-config');
-let monitorManager = require('./monitor');
+let {MonitorManager} = require('taskcluster-lib-monitor');
 let SchemaSet = require('taskcluster-lib-validate');
 let libReferences = require('taskcluster-lib-references');
 let {App} = require('taskcluster-lib-app');
 const tcdb = require('taskcluster-db');
 let pulse = require('taskcluster-lib-pulse');
 const QuickLRU = require('quick-lru');
+
+// monitor messages are shared among many files in this service, so they are
+// declared once in monitor.js
+require('./monitor');
 
 // Create component loader
 let load = loader({
@@ -35,7 +39,8 @@ let load = loader({
 
   monitor: {
     requires: ['process', 'profile', 'cfg'],
-    setup: ({process, profile, cfg}) => monitorManager.setup({
+    setup: ({process, profile, cfg}) => MonitorManager.setup({
+      serviceName: 'queue',
       processName: process,
       verify: profile !== 'production',
       ...cfg.monitoring,
@@ -324,7 +329,7 @@ let load = loader({
     requires: ['cfg', 'schemaset'],
     setup: ({cfg, schemaset}) => libReferences.fromService({
       schemaset,
-      references: [builder.reference(), exchanges.reference(), monitorManager.reference()],
+      references: [builder.reference(), exchanges.reference(), MonitorManager.reference('queue')],
     }).generateReferences(),
   },
 
