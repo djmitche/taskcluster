@@ -35,11 +35,13 @@ func (p *StaticProvider) ConfigureRun(state *run.State) error {
 		return err
 	}
 
-	state.RootURL = tcurls.NormalizeRootURL(pc.RootURL)
+	access := state.GetAccess()
+	access.RootURL = tcurls.NormalizeRootURL(pc.RootURL)
+	state.SetAccess(access)
 
 	// We need a worker manager client for fetching taskcluster credentials.
 	// Ensure auth is disabled in client, since we don't have credentials yet.
-	wm, err := p.workerManagerClientFactory(state.RootURL, nil)
+	wm, err := p.workerManagerClientFactory(access.RootURL, nil)
 	if err != nil {
 		return fmt.Errorf("Could not create worker manager client: %v", err)
 	}
@@ -56,27 +58,24 @@ func (p *StaticProvider) ConfigureRun(state *run.State) error {
 		return err
 	}
 
-	state.WorkerConfig = state.WorkerConfig.Merge(pwc.Config)
-	state.Files = append(state.Files, pwc.Files...)
+	state.MergeWorkerConfig(pwc.Config)
+	state.AppendFiles(pwc.Files...)
 
-	state.WorkerLocation = map[string]string{
-		"cloud": "static",
-	}
+	workerLocation := map[string]string{"cloud": "static"}
 
-	if workerLocation, ok := p.runnercfg.Provider.Data["workerLocation"]; ok {
-		for k, v := range workerLocation.(map[string]interface{}) {
-			state.WorkerLocation[k], ok = v.(string)
+	if wl, ok := p.runnercfg.Provider.Data["workerLocation"]; ok {
+		for k, v := range wl.(map[string]interface{}) {
+			workerLocation[k], ok = v.(string)
 			if !ok {
 				return fmt.Errorf("workerLocation value %s is not a string", k)
 			}
 		}
 	}
-
-	state.ProviderMetadata = map[string]interface{}{}
+	state.SetWorkerLocation(workerLocation)
 
 	if providerMetadata, ok := p.runnercfg.Provider.Data["providerMetadata"]; ok {
 		for k, v := range providerMetadata.(map[string]interface{}) {
-			state.ProviderMetadata[k] = v
+			state.UpdateProviderMetadata(k, v)
 		}
 	}
 

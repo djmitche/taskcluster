@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tcurls "github.com/taskcluster/taskcluster-lib-urls"
+	taskcluster "github.com/taskcluster/taskcluster/v30/clients/client-go"
 	"github.com/taskcluster/taskcluster/v30/internal/workerproto"
 	"github.com/taskcluster/taskcluster/v30/tools/worker-runner/cfg"
 	"github.com/taskcluster/taskcluster/v30/tools/worker-runner/provider/provider"
@@ -30,30 +31,37 @@ func (p *StandaloneProvider) ConfigureRun(state *run.State) error {
 		return err
 	}
 
-	state.RootURL = tcurls.NormalizeRootURL(pc.RootURL)
-	state.Credentials.ClientID = pc.ClientID
-	state.Credentials.AccessToken = pc.AccessToken
-	state.WorkerPoolID = pc.WorkerPoolID
-	state.WorkerGroup = pc.WorkerGroup
-	state.WorkerID = pc.WorkerID
-	state.WorkerLocation = map[string]string{
+	state.SetAccess(run.Access{
+		RootURL: tcurls.NormalizeRootURL(pc.RootURL),
+		Credentials: taskcluster.Credentials{
+			ClientID:    pc.ClientID,
+			AccessToken: pc.AccessToken,
+		},
+	})
+
+	state.SetIdentity(run.Identity{
+		WorkerPoolID: pc.WorkerPoolID,
+		WorkerGroup:  pc.WorkerGroup,
+		WorkerID:     pc.WorkerID,
+	})
+
+	workerLocation := map[string]string{
 		"cloud": "standalone",
 	}
 
-	if workerLocation, ok := p.runnercfg.Provider.Data["workerLocation"]; ok {
-		for k, v := range workerLocation.(map[string]interface{}) {
-			state.WorkerLocation[k], ok = v.(string)
+	if wl, ok := p.runnercfg.Provider.Data["workerLocation"]; ok {
+		for k, v := range wl.(map[string]interface{}) {
+			workerLocation[k], ok = v.(string)
 			if !ok {
 				return fmt.Errorf("workerLocation value %s is not a string", k)
 			}
 		}
 	}
-
-	state.ProviderMetadata = map[string]interface{}{}
+	state.SetWorkerLocation(workerLocation)
 
 	if providerMetadata, ok := p.runnercfg.Provider.Data["providerMetadata"]; ok {
 		for k, v := range providerMetadata.(map[string]interface{}) {
-			state.ProviderMetadata[k] = v
+			state.UpdateProviderMetadata(k, v)
 		}
 	}
 

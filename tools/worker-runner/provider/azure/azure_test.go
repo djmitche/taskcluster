@@ -81,9 +81,8 @@ func TestConfigureRun(t *testing.T) {
 	p, err := new(runnercfg, tc.FakeWorkerManagerClientFactory, mds)
 	require.NoError(t, err, "creating provider")
 
-	state := run.State{
-		WorkerConfig: runnercfg.WorkerConfig,
-	}
+	state := run.State{}
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 	err = p.ConfigureRun(&state)
 	require.NoError(t, err)
 
@@ -95,13 +94,16 @@ func TestConfigureRun(t *testing.T) {
 	require.Equal(t, json.RawMessage(`{"document":"`+attestedDocument+`"}`), reg.WorkerIdentityProof)
 	require.Equal(t, workerPoolId, reg.WorkerPoolID)
 
-	require.Equal(t, "https://tc.example.com", state.RootURL, "rootURL is correct")
-	require.Equal(t, "testing", state.Credentials.ClientID, "clientID is correct")
-	require.Equal(t, "at", state.Credentials.AccessToken, "accessToken is correct")
-	require.Equal(t, "cert", state.Credentials.Certificate, "cert is correct")
-	require.Equal(t, "w/p", state.WorkerPoolID, "workerPoolID is correct")
-	require.Equal(t, "wg", state.WorkerGroup, "workerGroup is correct")
-	require.Equal(t, "vm-w-p-test", state.WorkerID, "workerID is correct")
+	access := state.GetAccess()
+	require.Equal(t, "https://tc.example.com", access.RootURL, "rootURL is correct")
+	require.Equal(t, "testing", access.Credentials.ClientID, "clientID is correct")
+	require.Equal(t, "at", access.Credentials.AccessToken, "accessToken is correct")
+	require.Equal(t, "cert", access.Credentials.Certificate, "cert is correct")
+
+	identity := state.GetIdentity()
+	require.Equal(t, "w/p", identity.WorkerPoolID, "workerPoolID is correct")
+	require.Equal(t, "wg", identity.WorkerGroup, "workerGroup is correct")
+	require.Equal(t, "vm-w-p-test", identity.WorkerID, "workerID is correct")
 
 	require.Equal(t, map[string]interface{}{
 		"vm-id":         "df09142e-c0dd-43d9-a515-489f19829dfd",
@@ -109,13 +111,15 @@ func TestConfigureRun(t *testing.T) {
 		"region":        "uswest",
 		"local-ipv4":    "10.1.2.4",
 		"public-ipv4":   "104.42.72.130",
-	}, state.ProviderMetadata, "providerMetadata is correct")
+	}, state.GetProviderMetadata(), "providerMetadata is correct")
 
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-register-worker"), "value for worker-config")
+	workerConfig := state.GetWorkerConfig()
+	require.Equal(t, true, workerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	require.Equal(t, true, workerConfig.MustGet("from-register-worker"), "value for worker-config")
 
-	require.Equal(t, "azure", state.WorkerLocation["cloud"])
-	require.Equal(t, "uswest", state.WorkerLocation["region"])
+	workerLocation := state.GetWorkerLocation()
+	require.Equal(t, "azure", workerLocation["cloud"])
+	require.Equal(t, "uswest", workerLocation["region"])
 
 	wkr := ptesting.NewFakeWorkerWithCapabilities("shutdown")
 	defer wkr.Close()

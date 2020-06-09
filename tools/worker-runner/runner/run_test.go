@@ -101,14 +101,14 @@ worker:
 `), 0755)
 	require.NoError(t, err)
 
-	run, err := Run(configPath)
+	state, err := Run(configPath)
 	require.NoError(t, err)
 
 	// spot-check some run values; the main point here is that
 	// an error does not occur
-	require.Equal(t, "https://tc.example.com", run.RootURL)
-	require.Equal(t, "fake", run.Credentials.ClientID)
-	require.Equal(t, "pp/ww", run.WorkerPoolID)
+	require.Equal(t, "https://tc.example.com", state.GetAccess().RootURL)
+	require.Equal(t, "fake", state.GetAccess().Credentials.ClientID)
+	require.Equal(t, "pp/ww", state.GetIdentity().WorkerPoolID)
 }
 
 func TestDummyCached(t *testing.T) {
@@ -135,10 +135,10 @@ worker:
 `, cachePath)), 0755)
 	require.NoError(t, err)
 
-	run, err := Run(configPath)
+	state, err := Run(configPath)
 	require.NoError(t, err)
 
-	require.Equal(t, true, run.WorkerConfig.MustGet("fromFirstRun"))
+	require.Equal(t, true, state.GetWorkerConfig().MustGet("fromFirstRun"))
 
 	// slightly different config this time, omitting `fromFirstRun`:
 	err = ioutil.WriteFile(configPath, []byte(fmt.Sprintf(`
@@ -157,8 +157,8 @@ worker:
 `, cachePath)), 0755)
 	require.NoError(t, err)
 
-	run, err = Run(configPath)
+	state, err = Run(configPath)
 	require.NoError(t, err)
 
-	require.Equal(t, true, run.WorkerConfig.MustGet("fromFirstRun"))
+	require.Equal(t, true, state.GetWorkerConfig().MustGet("fromFirstRun"))
 }

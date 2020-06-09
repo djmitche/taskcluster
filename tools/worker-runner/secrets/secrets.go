@@ -24,7 +24,10 @@ func ConfigureRun(runnercfg *cfg.RunnerConfig, state *run.State) error {
 }
 
 func configureRun(runnercfg *cfg.RunnerConfig, state *run.State, secretsClientFactory tc.SecretsClientFactory) error {
-	secretsClient, err := secretsClientFactory(state.RootURL, &state.Credentials)
+	access := state.GetAccess()
+	identity := state.GetIdentity()
+
+	secretsClient, err := secretsClientFactory(access.RootURL, &access.Credentials)
 	if err != nil {
 		return err
 	}
@@ -32,7 +35,7 @@ func configureRun(runnercfg *cfg.RunnerConfig, state *run.State, secretsClientFa
 	// Consult secrets named both `worker-type:..` and (preferred) `worker-pool:..`.
 	found := false
 	for _, prefix := range []string{"worker-type:", "worker-pool:"} {
-		secretName := prefix + state.WorkerPoolID
+		secretName := prefix + identity.WorkerPoolID
 		secResponse, err := secretsClient.Get(secretName)
 		if err != nil {
 			if apiCallException, isAPICallException := err.(*tcclient.APICallException); isAPICallException {
@@ -76,7 +79,7 @@ func configureRun(runnercfg *cfg.RunnerConfig, state *run.State, secretsClientFa
 		}
 
 		found = true
-		state.WorkerConfig = state.WorkerConfig.Merge(secret.Config)
+		state.MergeWorkerConfig(secret.Config)
 
 		if len(secret.Files) != 0 {
 			return fmt.Errorf("secret files are nonempty - files are not supported yet")
@@ -84,7 +87,7 @@ func configureRun(runnercfg *cfg.RunnerConfig, state *run.State, secretsClientFa
 	}
 
 	if !found {
-		log.Printf("WARNING: No worker secrets for worker pool %v.", state.WorkerPoolID)
+		log.Printf("WARNING: No worker secrets for worker pool %v.", identity.WorkerPoolID)
 	}
 	return nil
 }

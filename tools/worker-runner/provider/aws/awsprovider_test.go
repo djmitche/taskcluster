@@ -57,9 +57,8 @@ func TestAWSConfigureRun(t *testing.T) {
 	p, err := new(runnercfg, tc.FakeWorkerManagerClientFactory, mds)
 	require.NoError(t, err, "creating provider")
 
-	state := run.State{
-		WorkerConfig: runnercfg.WorkerConfig,
-	}
+	state := run.State{}
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 	err = p.ConfigureRun(&state)
 	require.NoError(t, err)
 
@@ -71,13 +70,16 @@ func TestAWSConfigureRun(t *testing.T) {
 	require.Equal(t, json.RawMessage(`{"document":"{\n  \"instanceId\" : \"i-55555nonesense5\",\n  \"region\" : \"us-west-2\",\n  \"availabilityZone\" : \"us-west-2a\",\n  \"instanceType\" : \"t2.micro\",\n  \"imageId\" : \"banana\"\n,  \"privateIp\" : \"1.1.1.1\"\n}","signature":"thisisasignature"}`), reg.WorkerIdentityProof)
 	require.Equal(t, "w/p", reg.WorkerPoolID)
 
-	require.Equal(t, "https://tc.example.com", state.RootURL, "rootURL is correct")
-	require.Equal(t, "testing", state.Credentials.ClientID, "clientID is correct")
-	require.Equal(t, "at", state.Credentials.AccessToken, "accessToken is correct")
-	require.Equal(t, "cert", state.Credentials.Certificate, "cert is correct")
-	require.Equal(t, "w/p", state.WorkerPoolID, "workerPoolID is correct")
-	require.Equal(t, "wg", state.WorkerGroup, "workerGroup is correct")
-	require.Equal(t, "i-55555nonesense5", state.WorkerID, "workerID is correct")
+	access := state.GetAccess()
+	require.Equal(t, "https://tc.example.com", access.RootURL, "rootURL is correct")
+	require.Equal(t, "testing", access.Credentials.ClientID, "clientID is correct")
+	require.Equal(t, "at", access.Credentials.AccessToken, "accessToken is correct")
+	require.Equal(t, "cert", access.Credentials.Certificate, "cert is correct")
+
+	identity := state.GetIdentity()
+	require.Equal(t, "w/p", identity.WorkerPoolID, "workerPoolID is correct")
+	require.Equal(t, "wg", identity.WorkerGroup, "workerGroup is correct")
+	require.Equal(t, "i-55555nonesense5", identity.WorkerID, "workerID is correct")
 
 	require.Equal(t, map[string]interface{}{
 		"instance-id":       "i-55555nonesense5",
@@ -88,16 +90,18 @@ func TestAWSConfigureRun(t *testing.T) {
 		"local-ipv4":        "1.1.1.1",
 		"public-hostname":   "hostname",
 		"public-ipv4":       "2.2.2.2",
-	}, state.ProviderMetadata, "providerMetadata is correct")
+	}, state.GetProviderMetadata(), "providerMetadata is correct")
 
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-register-worker"), "value for from-register-worker")
-	require.Equal(t, false, state.WorkerConfig.Has("from-ud"), "value from user-data config ignored")
-	require.Equal(t, "a file.", state.Files[0].Description)
+	workerConfig := state.GetWorkerConfig()
+	require.Equal(t, true, workerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	require.Equal(t, true, workerConfig.MustGet("from-register-worker"), "value for from-register-worker")
+	require.Equal(t, false, workerConfig.Has("from-ud"), "value from user-data config ignored")
+	require.Equal(t, "a file.", state.GetFiles()[0].Description)
 
-	require.Equal(t, "aws", state.WorkerLocation["cloud"])
-	require.Equal(t, "us-west-2", state.WorkerLocation["region"])
-	require.Equal(t, "us-west-2a", state.WorkerLocation["availabilityZone"])
+	workerLocation := state.GetWorkerLocation()
+	require.Equal(t, "aws", workerLocation["cloud"])
+	require.Equal(t, "us-west-2", workerLocation["region"])
+	require.Equal(t, "us-west-2a", workerLocation["availabilityZone"])
 
 	wkr := ptesting.NewFakeWorkerWithCapabilities("shutdown")
 	defer wkr.Close()

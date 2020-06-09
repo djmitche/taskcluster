@@ -11,11 +11,12 @@ import (
 )
 
 func TestCredsExpiration(t *testing.T) {
-	state := &run.State{
+	state := &run.State{}
+	state.SetAccess(run.Access{
 		// message is sent 30 seconds before expiration, so set expiration
 		// for 30s from now
 		CredentialsExpire: time.Now().Add(30 * time.Second),
-	}
+	})
 
 	ce := New(state)
 

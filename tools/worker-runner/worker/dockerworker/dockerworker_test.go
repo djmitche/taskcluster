@@ -11,7 +11,6 @@ import (
 
 	"github.com/Flaque/filet"
 	"github.com/stretchr/testify/require"
-	"github.com/taskcluster/taskcluster/v30/tools/worker-runner/cfg"
 	"github.com/taskcluster/taskcluster/v30/tools/worker-runner/run"
 )
 
@@ -40,10 +39,7 @@ func TestStartWorkerJSFile(t *testing.T) {
 			ConfigPath: filepath.Join(dir, "config.json"),
 		},
 	}
-	state := run.State{
-		// lots of omitted fields that aren't used
-		WorkerConfig: cfg.NewWorkerConfig(),
-	}
+	state := run.State{}
 	_, err = dw.StartWorker(&state)
 	require.NoError(t, err)
 
@@ -73,10 +69,7 @@ func TestStartWorkerReleaseTarball(t *testing.T) {
 			ConfigPath: filepath.Join(dir, "config.json"),
 		},
 	}
-	state := run.State{
-		// lots of omitted fields that aren't used
-		WorkerConfig: cfg.NewWorkerConfig(),
-	}
+	state := run.State{}
 	_, err := dw.StartWorker(&state)
 	require.NoError(t, err)
 

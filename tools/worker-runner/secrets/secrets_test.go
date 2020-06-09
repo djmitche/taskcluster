@@ -28,12 +28,15 @@ func setup(t *testing.T) (*cfg.RunnerConfig, *run.State) {
 		},
 		WorkerConfig: runnerWorkerConfig,
 	}
-	state := &run.State{
-		RootURL:      "https://tc.example.com",
-		Credentials:  tcclient.Credentials{ClientID: "cli"},
+	state := &run.State{}
+	state.SetAccess(run.Access{
+		RootURL:     "https://tc.example.com",
+		Credentials: tcclient.Credentials{ClientID: "cli"},
+	})
+	state.SetIdentity(run.Identity{
 		WorkerPoolID: "pp/wt",
-		WorkerConfig: runnercfg.WorkerConfig,
-	}
+	})
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 	return runnercfg, state
 }
 
@@ -46,8 +49,8 @@ func TestGetSecretLegacyFormat(t *testing.T) {
 
 	err := configureRun(runnercfg, state, tc.FakeSecretsClientFactory)
 	assert.NoError(t, err, "expected great success")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-secret"), "value for from-secret")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-secret"), "value for from-secret")
 }
 
 func TestGetSecretLegacyInsuffScopes(t *testing.T) {
@@ -57,8 +60,8 @@ func TestGetSecretLegacyInsuffScopes(t *testing.T) {
 
 	err := configureRun(runnercfg, state, tc.FakeSecretsClientFactory)
 	assert.NoError(t, err, "expected great success")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	assert.Equal(t, false, state.WorkerConfig.MustGet("from-secret"), "value for from-secret")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	assert.Equal(t, false, state.GetWorkerConfig().MustGet("from-secret"), "value for from-secret")
 }
 
 func TestGetSecretLegacyName(t *testing.T) {
@@ -70,8 +73,8 @@ func TestGetSecretLegacyName(t *testing.T) {
 
 	err := configureRun(runnercfg, state, tc.FakeSecretsClientFactory)
 	assert.NoError(t, err, "expected great success")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-secret"), "value for from-secret")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-secret"), "value for from-secret")
 }
 
 func TestGetSecretConfigFilesFormat(t *testing.T) {
@@ -83,8 +86,8 @@ func TestGetSecretConfigFilesFormat(t *testing.T) {
 
 	err := configureRun(runnercfg, state, tc.FakeSecretsClientFactory)
 	assert.NoError(t, err, "expected great success")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-secret"), "value for from-secret")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-secret"), "value for from-secret")
 }
 
 func TestGetSecretNotFound(t *testing.T) {
@@ -92,6 +95,6 @@ func TestGetSecretNotFound(t *testing.T) {
 
 	err := configureRun(runnercfg, state, tc.FakeSecretsClientFactory)
 	assert.NoError(t, err, "expected great success")
-	assert.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	assert.Equal(t, false, state.WorkerConfig.MustGet("from-secret"), "value for from-secret (not found)")
+	assert.Equal(t, true, state.GetWorkerConfig().MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	assert.Equal(t, false, state.GetWorkerConfig().MustGet("from-secret"), "value for from-secret (not found)")
 }

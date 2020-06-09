@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	taskcluster "github.com/taskcluster/taskcluster/v30/clients/client-go"
 	"github.com/taskcluster/taskcluster/v30/clients/client-go/tcworkermanager"
 	"github.com/taskcluster/taskcluster/v30/tools/worker-runner/run"
 	"github.com/taskcluster/taskcluster/v30/tools/worker-runner/tc"
@@ -34,15 +35,20 @@ func RegisterWorker(state *run.State, wm tc.WorkerManager, workerPoolID, provide
 		return nil, fmt.Errorf("Could not register worker: %v", err)
 	}
 
-	state.WorkerPoolID = workerPoolID
-	state.WorkerID = workerID
-	state.WorkerGroup = workerGroup
+	state.SetIdentity(run.Identity{
+		WorkerPoolID: workerPoolID,
+		WorkerID:     workerID,
+		WorkerGroup:  workerGroup,
+	})
 
-	state.Credentials.ClientID = reg.Credentials.ClientID
-	state.Credentials.AccessToken = reg.Credentials.AccessToken
-	state.Credentials.Certificate = reg.Credentials.Certificate
-
-	state.CredentialsExpire = time.Time(reg.Expires)
+	access := state.GetAccess()
+	access.Credentials = taskcluster.Credentials{
+		ClientID:    reg.Credentials.ClientID,
+		AccessToken: reg.Credentials.AccessToken,
+		Certificate: reg.Credentials.Certificate,
+	}
+	access.CredentialsExpire = time.Time(reg.Expires)
+	state.SetAccess(access)
 
 	wc := json.RawMessage(`{}`)
 	if reg.WorkerConfig != nil {
@@ -64,13 +70,15 @@ func RemoveWorker(state *run.State, factory tc.WorkerManagerClientFactory) error
 		return nil
 	}
 
-	wc, err := factory(state.RootURL, &state.Credentials)
+	access := state.GetAccess()
+	wc, err := factory(access.RootURL, &access.Credentials)
 	if err != nil {
 		log.Printf("Error instanciating worker-manager client: %v\n", err)
 		return shutdown()
 	}
 
-	if err = wc.RemoveWorker(state.WorkerPoolID, state.WorkerGroup, state.WorkerID); err != nil {
+	identity := state.GetIdentity()
+	if err = wc.RemoveWorker(identity.WorkerPoolID, identity.WorkerGroup, identity.WorkerID); err != nil {
 		log.Printf("Error removing the worker: %v\n", err)
 		return shutdown()
 	}

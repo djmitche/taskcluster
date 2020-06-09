@@ -30,12 +30,14 @@ func (ce *CredExp) SetProtocol(proto *workerproto.Protocol) {
 }
 
 func (ce *CredExp) WorkerStarted() error {
+	access := ce.state.GetAccess()
+
 	// gracefully terminate the worker when the credentials expire, if they expire
-	if ce.state.CredentialsExpire.IsZero() {
+	if access.CredentialsExpire.IsZero() {
 		return nil
 	}
 
-	untilExpire := time.Until(ce.state.CredentialsExpire)
+	untilExpire := time.Until(access.CredentialsExpire)
 	ce.credsExpireTimer = time.AfterFunc(untilExpire-30*time.Second, func() {
 		if ce.proto != nil && ce.proto.Capable("graceful-termination") {
 			log.Println("Taskcluster Credentials are expiring in 30s; stopping worker")

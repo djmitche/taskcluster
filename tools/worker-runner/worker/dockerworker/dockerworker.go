@@ -31,8 +31,11 @@ type dockerworker struct {
 func (d *dockerworker) ConfigureRun(state *run.State) error {
 	var err error
 
+	workerConfig := cfg.NewWorkerConfig()
+
 	// copy some values from the provisioner metadata, if they are set; if not,
 	// docker-worker will fall back to defaults
+	providerMetadata := state.GetProviderMetadata()
 	for cfg, md := range map[string]string{
 		// docker-worker config : providerMetadata
 		"host":           "public-hostname",
@@ -43,9 +46,9 @@ func (d *dockerworker) ConfigureRun(state *run.State) error {
 		"instanceId":     "instance-id",
 		"region":         "region",
 	} {
-		v, ok := state.ProviderMetadata[md]
+		v, ok := providerMetadata[md]
 		if ok {
-			state.WorkerConfig, err = state.WorkerConfig.Set(cfg, v)
+			workerConfig, err = workerConfig.Set(cfg, v)
 			if err != nil {
 				return err
 			}
@@ -54,12 +57,12 @@ func (d *dockerworker) ConfigureRun(state *run.State) error {
 		}
 	}
 
-	workerLocationJson, err := json.Marshal(state.WorkerLocation)
+	workerLocationJson, err := json.Marshal(state.GetWorkerLocation())
 	if err != nil {
 		return fmt.Errorf("Error encoding worker location: %v", err)
 	}
 
-	state.WorkerConfig, err = state.WorkerConfig.Set("workerLocation", string(workerLocationJson))
+	workerConfig, err = workerConfig.Set("workerLocation", string(workerLocationJson))
 	if err != nil {
 		return fmt.Errorf("Could not set worker location in the worker config: %v", err)
 	}
@@ -67,25 +70,29 @@ func (d *dockerworker) ConfigureRun(state *run.State) error {
 	set := func(key, value string) {
 		var err error
 		// only programming errors can cause this to fail
-		state.WorkerConfig, err = state.WorkerConfig.Set(key, value)
+		workerConfig, err = workerConfig.Set(key, value)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	set("rootUrl", state.RootURL)
-	set("taskcluster.clientId", state.Credentials.ClientID)
-	set("taskcluster.accessToken", state.Credentials.AccessToken)
-	if state.Credentials.Certificate != "" {
-		set("taskcluster.certificate", state.Credentials.Certificate)
+	access := state.GetAccess()
+	set("rootUrl", access.RootURL)
+	set("taskcluster.clientId", access.Credentials.ClientID)
+	set("taskcluster.accessToken", access.Credentials.AccessToken)
+	if access.Credentials.Certificate != "" {
+		set("taskcluster.certificate", access.Credentials.Certificate)
 	}
 
-	set("workerId", state.WorkerID)
-	set("workerGroup", state.WorkerGroup)
+	identity := state.GetIdentity()
+	set("workerId", identity.WorkerID)
+	set("workerGroup", identity.WorkerGroup)
 
-	workerPoolID := strings.SplitAfterN(state.WorkerPoolID, "/", 2)
+	workerPoolID := strings.SplitAfterN(identity.WorkerPoolID, "/", 2)
 	set("provisionerId", workerPoolID[0][:len(workerPoolID[0])-1])
 	set("workerType", workerPoolID[1])
+
+	state.MergeWorkerConfig(workerConfig)
 
 	return nil
 }
@@ -96,7 +103,7 @@ func (d *dockerworker) UseCachedRun(state *run.State) error {
 
 func (d *dockerworker) StartWorker(state *run.State) (workerproto.Transport, error) {
 	// write out the config file
-	content, err := json.MarshalIndent(state.WorkerConfig, "", "  ")
+	content, err := json.MarshalIndent(state.GetWorkerConfig(), "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("Error constructing worker config: %v", err)
 	}

@@ -29,8 +29,11 @@ type genericworker struct {
 func (d *genericworker) ConfigureRun(state *run.State) error {
 	var err error
 
+	workerConfig := cfg.NewWorkerConfig()
+
 	// copy some values from the provider metadata, if they are set; if not,
 	// generic-worker will fall back to defaults
+	providerMetadata := state.GetProviderMetadata()
 	for cfg, md := range map[string]string{
 		// generic-worker config : providerMetadata
 		// required
@@ -42,9 +45,9 @@ func (d *genericworker) ConfigureRun(state *run.State) error {
 		"region":           "region",
 		"availabilityZone": "availability-zone",
 	} {
-		v, ok := state.ProviderMetadata[md]
+		v, ok := providerMetadata[md]
 		if ok {
-			state.WorkerConfig, err = state.WorkerConfig.Set(cfg, v)
+			workerConfig, err = workerConfig.Set(cfg, v)
 			if err != nil {
 				return err
 			}
@@ -56,35 +59,38 @@ func (d *genericworker) ConfigureRun(state *run.State) error {
 	set := func(key, value string) {
 		var err error
 		// only programming errors can cause this to fail
-		state.WorkerConfig, err = state.WorkerConfig.Set(key, value)
+		workerConfig, err = workerConfig.Set(key, value)
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	// pass all of provider metadata in as workerTypeMetadata
-	state.WorkerConfig, err = state.WorkerConfig.Set("workerTypeMetadata", state.ProviderMetadata)
+	workerConfig, err = workerConfig.Set("workerTypeMetadata", state.GetProviderMetadata())
 	if err != nil {
 		panic(err)
 	}
 
-	// split to workerType and provisionerId
-	splitWorkerPoolID := strings.SplitAfterN(state.WorkerPoolID, "/", 2)
-
 	// required settings
 	// see https://github.com/taskcluster/generic-worker#set-up-your-env
-	set("rootURL", state.RootURL)
-	set("clientId", state.Credentials.ClientID)
-	set("accessToken", state.Credentials.AccessToken)
-	set("workerId", state.WorkerID)
-	set("workerType", splitWorkerPoolID[1])
-
-	// optional settings
-	set("workerGroup", state.WorkerGroup)
-	if state.Credentials.Certificate != "" {
-		set("certificate", state.Credentials.Certificate)
+	access := state.GetAccess()
+	set("rootURL", access.RootURL)
+	set("clientId", access.Credentials.ClientID)
+	set("accessToken", access.Credentials.AccessToken)
+	if access.Credentials.Certificate != "" {
+		set("certificate", access.Credentials.Certificate)
 	}
+
+	identity := state.GetIdentity()
+	set("workerId", identity.WorkerID)
+	set("workerGroup", identity.WorkerGroup)
+
+	// split to workerType and provisionerId
+	splitWorkerPoolID := strings.SplitAfterN(identity.WorkerPoolID, "/", 2)
+	set("workerType", splitWorkerPoolID[1])
 	set("provisionerId", splitWorkerPoolID[0][:len(splitWorkerPoolID[0])-1])
+
+	state.MergeWorkerConfig(workerConfig)
 
 	return nil
 }
@@ -95,7 +101,7 @@ func (d *genericworker) UseCachedRun(state *run.State) error {
 
 func (d *genericworker) StartWorker(state *run.State) (workerproto.Transport, error) {
 	// write out the config file
-	content, err := json.MarshalIndent(state.WorkerConfig, "", "  ")
+	content, err := json.MarshalIndent(state.GetWorkerConfig(), "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("Error constructing worker config: %v", err)
 	}

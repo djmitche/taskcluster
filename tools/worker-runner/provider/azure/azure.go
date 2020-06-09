@@ -57,13 +57,15 @@ func (p *AzureProvider) ConfigureRun(state *run.State) error {
 		return err
 	}
 
-	state.RootURL = taggedData.RootURL
-	state.WorkerLocation = map[string]string{
+	state.SetAccess(run.Access{
+		RootURL: taggedData.RootURL,
+	})
+	state.SetWorkerLocation(map[string]string{
 		"cloud":  "azure",
 		"region": instanceData.Compute.Location,
-	}
+	})
 
-	wm, err := p.workerManagerClientFactory(state.RootURL, nil)
+	wm, err := p.workerManagerClientFactory(taggedData.RootURL, nil)
 	if err != nil {
 		return fmt.Errorf("Could not create worker manager client: %v", err)
 	}
@@ -99,15 +101,15 @@ func (p *AzureProvider) ConfigureRun(state *run.State) error {
 		}
 	}
 
-	state.ProviderMetadata = providerMetadata
+	state.SetProviderMetadata(providerMetadata)
 
 	pwc, err := cfg.ParseProviderWorkerConfig(p.runnercfg, workerConfig)
 	if err != nil {
 		return err
 	}
 
-	state.WorkerConfig = state.WorkerConfig.Merge(pwc.Config)
-	state.Files = append(state.Files, pwc.Files...)
+	state.MergeWorkerConfig(pwc.Config)
+	state.AppendFiles(pwc.Files...)
 
 	return nil
 }

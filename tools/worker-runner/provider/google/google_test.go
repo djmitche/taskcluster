@@ -61,9 +61,8 @@ func TestGoogleConfigureRun(t *testing.T) {
 	p, err := new(runnercfg, tc.FakeWorkerManagerClientFactory, mds)
 	require.NoError(t, err, "creating provider")
 
-	state := run.State{
-		WorkerConfig: runnercfg.WorkerConfig,
-	}
+	state := run.State{}
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 	err = p.ConfigureRun(&state)
 	require.NoError(t, err, "ConfigureRun")
 
@@ -76,13 +75,16 @@ func TestGoogleConfigureRun(t *testing.T) {
 		require.Equal(t, "w/p", reg.WorkerPoolID)
 	}
 
-	require.Equal(t, "https://tc.example.com", state.RootURL, "rootURL is correct")
-	require.Equal(t, "testing", state.Credentials.ClientID, "clientID is correct")
-	require.Equal(t, "at", state.Credentials.AccessToken, "accessToken is correct")
-	require.Equal(t, "cert", state.Credentials.Certificate, "cert is correct")
-	require.Equal(t, "w/p", state.WorkerPoolID, "workerPoolID is correct")
-	require.Equal(t, "wg", state.WorkerGroup, "workerGroup is correct")
-	require.Equal(t, "i-123", state.WorkerID, "workerID is correct")
+	access := state.GetAccess()
+	require.Equal(t, "https://tc.example.com", access.RootURL, "rootURL is correct")
+	require.Equal(t, "testing", access.Credentials.ClientID, "clientID is correct")
+	require.Equal(t, "at", access.Credentials.AccessToken, "accessToken is correct")
+	require.Equal(t, "cert", access.Credentials.Certificate, "cert is correct")
+
+	identity := state.GetIdentity()
+	require.Equal(t, "w/p", identity.WorkerPoolID, "workerPoolID is correct")
+	require.Equal(t, "wg", identity.WorkerGroup, "workerGroup is correct")
+	require.Equal(t, "i-123", identity.WorkerID, "workerID is correct")
 
 	require.Equal(t, map[string]interface{}{
 		"project-id":      "proj-1234",
@@ -94,16 +96,18 @@ func TestGoogleConfigureRun(t *testing.T) {
 		"public-ipv4":     "1.2.3.4",
 		"public-hostname": "my-worker.example.com",
 		"local-ipv4":      "192.168.0.1",
-	}, state.ProviderMetadata, "providerMetadata is correct")
+	}, state.GetProviderMetadata(), "providerMetadata is correct")
 
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-register-worker"), "value for from-register-worker")
-	require.Equal(t, false, state.WorkerConfig.Has("from-ud"), "userdata worker-config ignored")
-	require.Equal(t, "a file.", state.Files[0].Description)
+	workerConfig := state.GetWorkerConfig()
+	require.Equal(t, true, workerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	require.Equal(t, true, workerConfig.MustGet("from-register-worker"), "value for from-register-worker")
+	require.Equal(t, false, workerConfig.Has("from-ud"), "userdata worker-config ignored")
+	require.Equal(t, "a file.", state.GetFiles()[0].Description)
 
-	require.Equal(t, "google", state.WorkerLocation["cloud"])
-	require.Equal(t, "in-central1", state.WorkerLocation["region"])
-	require.Equal(t, "in-central1-b", state.WorkerLocation["zone"])
+	workerLocation := state.GetWorkerLocation()
+	require.Equal(t, "google", workerLocation["cloud"])
+	require.Equal(t, "in-central1", workerLocation["region"])
+	require.Equal(t, "in-central1-b", workerLocation["zone"])
 
 	wkr := ptesting.NewFakeWorkerWithCapabilities("shutdown")
 	defer wkr.Close()

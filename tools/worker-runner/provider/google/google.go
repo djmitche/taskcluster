@@ -32,7 +32,9 @@ func (p *GoogleProvider) ConfigureRun(state *run.State) error {
 		return fmt.Errorf("Could not query user data: %v", err)
 	}
 
-	state.RootURL = userData.RootURL
+	state.SetAccess(run.Access{
+		RootURL: userData.RootURL,
+	})
 
 	// the worker identity
 	proofPath := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s&format=full", userData.RootURL)
@@ -43,16 +45,13 @@ func (p *GoogleProvider) ConfigureRun(state *run.State) error {
 
 	// We need a worker manager client for fetching taskcluster credentials.
 	// Ensure auth is disabled in client, since we don't have credentials yet.
-	wm, err := p.workerManagerClientFactory(state.RootURL, nil)
+	wm, err := p.workerManagerClientFactory(userData.RootURL, nil)
 	if err != nil {
 		return fmt.Errorf("Could not create worker manager client: %v", err)
 	}
 
 	workerIdentityProofMap := map[string]interface{}{"token": interface{}(proofToken)}
 
-	// TODO
-	// bug 1591476: we should get workerConfig from RegisterWorker()
-	// and not from the metadata service
 	workerConfig, err := provider.RegisterWorker(
 		state,
 		wm,
@@ -94,21 +93,21 @@ func (p *GoogleProvider) ConfigureRun(state *run.State) error {
 	providerMetadata["zone"] = zone
 	providerMetadata["region"] = zone[:len(zone)-2]
 
-	state.WorkerLocation = map[string]string{
+	state.SetWorkerLocation(map[string]string{
 		"cloud":  "google",
 		"region": providerMetadata["region"].(string),
 		"zone":   providerMetadata["zone"].(string),
-	}
+	})
 
-	state.ProviderMetadata = providerMetadata
+	state.SetProviderMetadata(providerMetadata)
 
 	pwc, err := cfg.ParseProviderWorkerConfig(p.runnercfg, workerConfig)
 	if err != nil {
 		return err
 	}
 
-	state.WorkerConfig = state.WorkerConfig.Merge(pwc.Config)
-	state.Files = append(state.Files, pwc.Files...)
+	state.MergeWorkerConfig(pwc.Config)
+	state.AppendFiles(pwc.Files...)
 
 	return nil
 }

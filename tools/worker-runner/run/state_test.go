@@ -9,14 +9,18 @@ import (
 
 func makeState() State {
 	return State{
-		RootURL: "https://tc.example.com",
-		Credentials: taskcluster.Credentials{
-			ClientID: "cli",
+		access: Access{
+			RootURL: "https://tc.example.com",
+			Credentials: taskcluster.Credentials{
+				ClientID: "cli",
+			},
 		},
-		WorkerPoolID: "wp/id",
-		WorkerGroup:  "wg",
-		WorkerID:     "wid",
-		WorkerLocation: map[string]string{
+		identity: Identity{
+			WorkerPoolID: "wp/id",
+			WorkerGroup:  "wg",
+			WorkerID:     "wid",
+		},
+		workerLocation: map[string]string{
 			"cloud": "mushroom",
 		},
 	}
@@ -24,42 +28,42 @@ func makeState() State {
 
 func TestCheckProviderResultsNoRootURL(t *testing.T) {
 	state := makeState()
-	state.RootURL = ""
+	state.access.RootURL = ""
 	require.Error(t, state.CheckProviderResults())
 }
 
 func TestCheckProviderResultsRootURLwithSlash(t *testing.T) {
 	state := makeState()
-	state.RootURL = "https://tc.example.com/"
+	state.access.RootURL = "https://tc.example.com/"
 	require.Error(t, state.CheckProviderResults())
 }
 
 func TestCheckProviderResultsNoClientID(t *testing.T) {
 	state := makeState()
-	state.Credentials.ClientID = ""
+	state.access.Credentials.ClientID = ""
 	require.Error(t, state.CheckProviderResults())
 }
 
 func TestCheckProviderResultsNoWorkerPoolID(t *testing.T) {
 	state := makeState()
-	state.WorkerPoolID = ""
+	state.identity.WorkerPoolID = ""
 	require.Error(t, state.CheckProviderResults())
 }
 
 func TestCheckProviderResultsNoWorkerGroup(t *testing.T) {
 	state := makeState()
-	state.WorkerGroup = ""
+	state.identity.WorkerGroup = ""
 	require.Error(t, state.CheckProviderResults())
 }
 
 func TestCheckProviderResultsNoWorkerID(t *testing.T) {
 	state := makeState()
-	state.WorkerID = ""
+	state.identity.WorkerID = ""
 	require.Error(t, state.CheckProviderResults())
 }
 
 func TestCheckProviderResultsNoCloud(t *testing.T) {
 	state := makeState()
-	delete(state.WorkerLocation, "cloud")
+	delete(state.workerLocation, "cloud")
 	require.Error(t, state.CheckProviderResults())
 }

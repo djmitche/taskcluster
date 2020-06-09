@@ -57,7 +57,7 @@ func Run(configFile string) (state run.State, err error) {
 		}
 	}
 
-	state.WorkerConfig = state.WorkerConfig.Merge(runnercfg.WorkerConfig)
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 
 	// initialize provider
 
@@ -85,7 +85,8 @@ func Run(configFile string) (state run.State, err error) {
 	}
 
 	// log the worker identity; this is useful for finding the worker in logfiles
-	log.Printf("Identified as worker %s/%s", state.WorkerGroup, state.WorkerID)
+	identity := state.GetIdentity()
+	log.Printf("Identified as worker %s/%s", identity.WorkerGroup, identity.WorkerID)
 
 	// fetch secrets
 
@@ -149,7 +150,7 @@ func Run(configFile string) (state run.State, err error) {
 
 	if !runCached {
 		log.Printf("Writing files")
-		err = files.ExtractAll(state.Files)
+		err = files.ExtractAll(state.GetFiles())
 		if err != nil {
 			return
 		}

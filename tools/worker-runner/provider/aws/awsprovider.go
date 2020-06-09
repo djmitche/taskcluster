@@ -41,14 +41,16 @@ func (p *AWSProvider) ConfigureRun(state *run.State) error {
 		return fmt.Errorf("Could not query signature for the instance identity document: %v", err)
 	}
 
-	state.RootURL = userData.RootURL
-	state.WorkerLocation = map[string]string{
+	state.SetAccess(run.Access{
+		RootURL: userData.RootURL,
+	})
+	state.SetWorkerLocation(map[string]string{
 		"cloud":            "aws",
 		"availabilityZone": iid_json.AvailabilityZone,
 		"region":           iid_json.Region,
-	}
+	})
 
-	wm, err := p.workerManagerClientFactory(state.RootURL, nil)
+	wm, err := p.workerManagerClientFactory(userData.RootURL, nil)
 	if err != nil {
 		return fmt.Errorf("Could not create worker manager client: %v", err)
 	}
@@ -91,15 +93,15 @@ func (p *AWSProvider) ConfigureRun(state *run.State) error {
 		"public-ipv4":       publicIp,
 	}
 
-	state.ProviderMetadata = providerMetadata
+	state.SetProviderMetadata(providerMetadata)
 
 	pwc, err := cfg.ParseProviderWorkerConfig(p.runnercfg, workerConfig)
 	if err != nil {
 		return err
 	}
 
-	state.WorkerConfig = state.WorkerConfig.Merge(pwc.Config)
-	state.Files = append(state.Files, pwc.Files...)
+	state.MergeWorkerConfig(pwc.Config)
+	state.AppendFiles(pwc.Files...)
 
 	return nil
 }

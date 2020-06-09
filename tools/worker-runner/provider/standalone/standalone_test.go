@@ -35,24 +35,28 @@ func TestConfigureRunNoOptional(t *testing.T) {
 	p, err := New(runnercfg)
 	require.NoError(t, err, "creating provider")
 
-	state := run.State{
-		WorkerConfig: runnercfg.WorkerConfig,
-	}
+	state := run.State{}
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 	err = p.ConfigureRun(&state)
 	require.NoError(t, err)
 
-	require.Equal(t, "https://tc.example.com", state.RootURL, "rootURL is correct")
-	require.Equal(t, "testing", state.Credentials.ClientID, "clientID is correct")
-	require.Equal(t, "at", state.Credentials.AccessToken, "accessToken is correct")
-	require.Equal(t, "", state.Credentials.Certificate, "cert is correct")
-	require.Equal(t, "w/p", state.WorkerPoolID, "workerPoolID is correct")
-	require.Equal(t, "wg", state.WorkerGroup, "workerGroup is correct")
-	require.Equal(t, "wi", state.WorkerID, "workerID is correct")
-	require.Equal(t, map[string]interface{}{}, state.ProviderMetadata, "providerMetadata is correct")
+	access := state.GetAccess()
+	require.Equal(t, "https://tc.example.com", access.RootURL, "rootURL is correct")
+	require.Equal(t, "testing", access.Credentials.ClientID, "clientID is correct")
+	require.Equal(t, "at", access.Credentials.AccessToken, "accessToken is correct")
+	require.Equal(t, "", access.Credentials.Certificate, "cert is correct")
 
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	require.Equal(t, "standalone", state.WorkerLocation["cloud"])
-	require.Equal(t, 1, len(state.WorkerLocation))
+	identity := state.GetIdentity()
+	require.Equal(t, "w/p", identity.WorkerPoolID, "workerPoolID is correct")
+	require.Equal(t, "wg", identity.WorkerGroup, "workerGroup is correct")
+	require.Equal(t, "wi", identity.WorkerID, "workerID is correct")
+
+	providerMetadata := state.GetProviderMetadata()
+	require.Nil(t, providerMetadata, "providerMetadata is correct")
+
+	require.Equal(t, true, state.GetWorkerConfig().MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	require.Equal(t, "standalone", state.GetWorkerLocation()["cloud"])
+	require.Equal(t, 1, len(state.GetWorkerLocation()))
 }
 
 func TestConfigureRunAllOptional(t *testing.T) {
@@ -88,27 +92,31 @@ func TestConfigureRunAllOptional(t *testing.T) {
 	p, err := New(runnercfg)
 	require.NoError(t, err, "creating provider")
 
-	state := run.State{
-		WorkerConfig: runnercfg.WorkerConfig,
-	}
+	state := run.State{}
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 	err = p.ConfigureRun(&state)
 	require.NoError(t, err)
 
-	require.Equal(t, "https://tc.example.com", state.RootURL, "rootURL is correct")
-	require.Equal(t, "testing", state.Credentials.ClientID, "clientID is correct")
-	require.Equal(t, "at", state.Credentials.AccessToken, "accessToken is correct")
-	require.Equal(t, "", state.Credentials.Certificate, "cert is correct")
-	require.Equal(t, "w/p", state.WorkerPoolID, "workerPoolID is correct")
-	require.Equal(t, "wg", state.WorkerGroup, "workerGroup is correct")
-	require.Equal(t, "wi", state.WorkerID, "workerID is correct")
+	access := state.GetAccess()
+	require.Equal(t, "https://tc.example.com", access.RootURL, "rootURL is correct")
+	require.Equal(t, "testing", access.Credentials.ClientID, "clientID is correct")
+	require.Equal(t, "at", access.Credentials.AccessToken, "accessToken is correct")
+	require.Equal(t, "", access.Credentials.Certificate, "cert is correct")
 
-	require.Equal(t, true, state.WorkerConfig.MustGet("from-runner-cfg"), "value for from-runner-cfg")
-	require.Equal(t, "standalone", state.WorkerLocation["cloud"])
-	require.Equal(t, "underworld", state.WorkerLocation["region"])
-	require.Equal(t, "666", state.WorkerLocation["zone"])
-	require.Equal(t, "1.2.3.4", state.ProviderMetadata["public-ip"])
-	require.Equal(t, "0.0.0.0", state.ProviderMetadata["secret-ip"])
-	require.Equal(t, 2, len(state.ProviderMetadata))
+	identity := state.GetIdentity()
+	require.Equal(t, "w/p", identity.WorkerPoolID, "workerPoolID is correct")
+	require.Equal(t, "wg", identity.WorkerGroup, "workerGroup is correct")
+	require.Equal(t, "wi", identity.WorkerID, "workerID is correct")
+
+	require.Equal(t, true, state.GetWorkerConfig().MustGet("from-runner-cfg"), "value for from-runner-cfg")
+	require.Equal(t, "standalone", state.GetWorkerLocation()["cloud"])
+	require.Equal(t, "underworld", state.GetWorkerLocation()["region"])
+	require.Equal(t, "666", state.GetWorkerLocation()["zone"])
+
+	providerMetadata := state.GetProviderMetadata()
+	require.Equal(t, "1.2.3.4", providerMetadata["public-ip"])
+	require.Equal(t, "0.0.0.0", providerMetadata["secret-ip"])
+	require.Equal(t, 2, len(providerMetadata))
 }
 
 func TestConfigureRunNonStringLocation(t *testing.T) {
@@ -139,9 +147,8 @@ func TestConfigureRunNonStringLocation(t *testing.T) {
 	p, err := New(runnercfg)
 	require.NoError(t, err, "creating provider")
 
-	state := run.State{
-		WorkerConfig: runnercfg.WorkerConfig,
-	}
+	state := run.State{}
+	state.MergeWorkerConfig(runnercfg.WorkerConfig)
 	err = p.ConfigureRun(&state)
 	if assert.Error(t, err) {
 		require.Equal(t, fmt.Errorf("workerLocation value region is not a string"), err)
