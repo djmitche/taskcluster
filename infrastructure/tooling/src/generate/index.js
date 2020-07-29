@@ -4,7 +4,7 @@ const {TaskGraph, ConsoleRenderer, LogRenderer} = require('console-taskgraph');
 const main = async (options) => {
   const target = options.target ? [`target-${options.target}`] : undefined;
   const taskgraph = new TaskGraph(generators, {
-    target,
+    target: 'db-schema-dump', // XXX temporary
     renderer: process.stdout.isTTY ?
       new ConsoleRenderer({elideCompleted: true}) :
       new LogRenderer(),
