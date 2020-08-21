@@ -207,7 +207,7 @@
       "config:base",
       "schedule:daily"
     ],
-    "rebaseConflictedPrs": false,
+    "rebaseWhen": "never",
     "prHourlyLimit": 0,
     "prConcurrentLimit": 9,
     "rangeStrategy": "update-lockfile",
