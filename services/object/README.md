@@ -17,3 +17,5 @@ No special configuration is required for development.
 
 Run `yarn workspace taskcluster-object test` to run the tess.
 Some of the tests will be skipped without additional credentials, but it is fine to make a pull request as long as no tests fail.
+The required setup for those credentials is in `test/helper/<backendType>.js` for each backend.
+The tests' use of cloud resources is minimal and should be within the free tier or otherwise very cheap, if you would like to set it up yourself.
