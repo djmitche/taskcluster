@@ -213,6 +213,10 @@ assert!(resp.status().is_success());
 # }
 ```
 
+## Uploading Objects
+
+The [`upload`](crate::upload) module provides specialized support for uploading objects to the Object Service.
+
 ## Generating URLs
 
 To generate a unsigned URL for an API method, use `<method>_url`:
@@ -266,6 +270,7 @@ Use the [slugid](https://crates.io/crates/slugid) crate to create slugIds (such 
 mod client;
 mod credentials;
 mod generated;
+pub mod upload;
 mod util;
 
 pub use client::{Client, ClientBuilder, Retry};

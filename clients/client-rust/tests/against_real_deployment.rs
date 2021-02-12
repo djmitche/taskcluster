@@ -2,8 +2,11 @@ use anyhow::Result;
 use reqwest::StatusCode;
 use serde_json::{json, Value};
 use std::env;
+use std::io::Cursor;
 use std::time::Duration;
-use taskcluster::{err_status_code, Auth, ClientBuilder, Credentials};
+use taskcluster::{
+    err_status_code, upload::upload_object, Auth, ClientBuilder, Credentials, Object,
+};
 use tokio;
 
 /// Return the TASKCLUSTER_ROOT_URL, or None if the test should be skipped,
@@ -326,6 +329,27 @@ async fn test_auth_expand_scopes() -> Result<()> {
         }
         // expansion always includes the input scopes, so this should exist
         assert!(saw_scope);
+    }
+
+    Ok(())
+}
+
+/// Test uploading a small bit of data.
+///
+/// This requires scope `object:upload:taskcluster:test/client-rs/*`.
+#[tokio::test]
+async fn test_small_upload() -> Result<()> {
+    if let Some(root_url) = get_root_url() {
+        let svc = Object::new(ClientBuilder::new(&root_url).credentials(Credentials::from_env()?))?;
+        let name = format!("test/client-rs/{}", slugid::v4());
+        upload_object(
+            "taskcluster",
+            name,
+            "text/plain",
+            &mut Cursor::new("hello, world".as_bytes()),
+            &svc,
+        )
+        .await?;
     }
 
     Ok(())
