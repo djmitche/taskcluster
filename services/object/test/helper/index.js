@@ -16,6 +16,7 @@ Object.assign(exports, require('./simple-download'));
 Object.assign(exports, require('./geturl-download'));
 Object.assign(exports, require('./data-inline-upload'));
 Object.assign(exports, require('./put-url-upload'));
+Object.assign(exports, require('./put-url2-upload'));
 
 exports.load = stickyLoader(load);
 

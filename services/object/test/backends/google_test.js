@@ -1,4 +1,5 @@
 const helper = require('../helper');
+const request = require('superagent');
 const assert = require('assert');
 const aws = require('aws-sdk');
 const testing = require('taskcluster-lib-testing');
@@ -109,6 +110,19 @@ helper.secrets.mockSuite(testing.suiteName(), ['google'], function(mock, skippin
     }
   };
 
+  const getObjectContent = async ({ name }) => {
+    const endpoint = 'https://storage.googleapis.com';
+    const url = `${endpoint}/${secret.testBucket}/${encodeURIComponent(name)}`;
+    const res = await request.get(url);
+    // note that superagent will automatically un-zip this if necessary
+    let data = res.body;
+    return {
+      data,
+      contentEncoding: res.header['content-encoding'],
+      contentType: res.header['content-type'],
+    };
+  };
+
   suite('setup', function() {
     test('any tags are rejected', async function() {
       const backend = new AwsBackend({
@@ -189,13 +203,7 @@ helper.secrets.mockSuite(testing.suiteName(), ['google'], function(mock, skippin
       // see https://github.com/taskcluster/taskcluster/issues/4748
       'htmlContentDisposition',
     ],
-    async getObjectContent({ name }) {
-      const res = await s3.getObject({
-        Bucket: secret.testBucket,
-        Key: name,
-      }).promise();
-      return { data: res.Body, contentType: res.ContentType };
-    },
+    getObjectContent,
   }, async function() {
     teardown(cleanup);
   });
@@ -207,13 +215,20 @@ helper.secrets.mockSuite(testing.suiteName(), ['google'], function(mock, skippin
       // see https://github.com/taskcluster/taskcluster/issues/4748
       'htmlContentDisposition',
     ],
-    async getObjectContent({ name }) {
-      const res = await s3.getObject({
-        Bucket: secret.testBucket,
-        Key: name,
-      }).promise();
-      return { data: res.Body, contentType: res.ContentType };
-    },
+    getObjectContent,
+  }, async function() {
+    teardown(cleanup);
+  });
+
+  helper.testPutUrl2Upload({
+    mock, skipping, prefix,
+    backendId: 'googlePrivate',
+    omit: [
+      // see https://github.com/taskcluster/taskcluster/issues/4748
+      'htmlContentDisposition',
+    ],
+    supportsGzipUpload: true,
+    getObjectContent,
   }, async function() {
     teardown(cleanup);
   });

@@ -301,6 +301,29 @@ type (
 
 		// Request a URL to which a PUT request can be made.
 		PutURL PutURLUploadRequest `json:"putUrl,omitempty"`
+
+		// Request a URL to which a PUT request can be made.  This differs from
+		// `putUrl` in that it supports content-encodings.
+		PutURL2 PutURL2UploadRequest `json:"putUrl2,omitempty"`
+	}
+
+	// Request a URL to which a PUT request can be made.  This differs from
+	// `putUrl` in that it supports content-encodings.
+	PutURL2UploadRequest struct {
+
+		// Content-Encodings with which the caller can encode the data.  The 'identity'
+		// encoding is implicitly included here.  The server will select an encoding
+		// supported by the backend and include that in the `headers` property of the
+		// response.
+		//
+		// Array items:
+		ContentEncodings []string `json:"contentEncodings"`
+
+		// Length, in bytes, of the uploaded data.
+		ContentLength int64 `json:"contentLength"`
+
+		// Content-type of the data to be uploaded.
+		ContentType string `json:"contentType"`
 	}
 
 	// Request a URL to which a PUT request can be made.
@@ -336,6 +359,34 @@ type (
 		URL string `json:"url"`
 	}
 
+	// Response containing a URL to which to PUT the data.
+	PutURLUploadResponse1 struct {
+
+		// Expiration time for the URL.  After this time, the client must
+		// call `createUpload` again to get a fresh URL.
+		Expires tcclient.Time `json:"expires"`
+
+		// Headers which must be included with the PUT request.  In many
+		// cases, these are included in a signature embedded in the URL,
+		// and must be provided verbatim.
+		//
+		// The `Content-Length` header may be included here.  Many HTTP client
+		// libraries will also set this directly when the length is known.  In
+		// this case, the values should be identical, and the header should only
+		// be specified once.
+		//
+		// If `Content-Encoding` is included, the caller must use the given
+		// encoding when making the PUT request.  The encoding will be
+		// `identity` or one of the values provided in `contentEncodings` in the
+		// request.
+		//
+		// Map entries:
+		Headers map[string]string `json:"headers"`
+
+		// URL to which a PUT request should be made.
+		URL string `json:"url"`
+	}
+
 	// The selected upload method, from those contained in the request.  At most one
 	// property will be set, indicating the selected method.  If no properties are set,
 	// then none of the proposed methods were selected.
@@ -348,6 +399,9 @@ type (
 
 		// Response containing a URL to which to PUT the data.
 		PutURL PutURLUploadResponse `json:"putUrl,omitempty"`
+
+		// Response containing a URL to which to PUT the data.
+		PutURL2 PutURLUploadResponse1 `json:"putUrl2,omitempty"`
 	}
 
 	// A simple download returns a URL to which the caller should make a GET request.

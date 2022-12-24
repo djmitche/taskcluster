@@ -41,6 +41,7 @@ properties:
     properties:
       dataInline: {$ref: "upload-method-data-inline.json#/definitions/request"}
       putUrl: {$ref: "upload-method-put-url.json#/definitions/request"}
+      putUrl2: {$ref: "upload-method-put-url2.json#/definitions/request"}
     additionalProperties: false
     required: []
 additionalProperties: false

@@ -230,6 +230,15 @@ helper.secrets.mockSuite(testing.suiteName(), ['aws'], function(mock, skipping) 
     teardown(cleanup);
   });
 
+  helper.testPutUrl2Upload({
+    mock, skipping, prefix,
+    backendId: 'awsPrivate',
+    getObjectContent,
+    supportsGzipUpload: false,
+  }, async function() {
+    teardown(cleanup);
+  });
+
   suite('expireObject', function() {
     teardown(cleanup);
 

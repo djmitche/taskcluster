@@ -35,8 +35,9 @@ class AwsBackend extends Backend {
     }
     this.s3 = new aws.S3(options);
 
-    // determine whether we are talking to a genuine AWS S3, or an emulation of it
+    // determine whether we are talking to a genuine AWS S3, Google, or some other S3 emulation.
     this.isAws = !this.config.endpoint;
+    this.isGoogle = !this.isAws && this.config.endpoint.match(/storage\.googleapis\.com/);
 
     if (this.isAws) {
       this.tags = this.config.tags || {};
@@ -54,8 +55,12 @@ class AwsBackend extends Backend {
       return await this.createDataInlineUpload(object, proposedUploadMethods.dataInline);
     }
 
+    if ('putUrl2' in proposedUploadMethods) {
+      return await this.createPutUrlUpload(object, 'putUrl2', proposedUploadMethods.putUrl2);
+    }
+
     if ('putUrl' in proposedUploadMethods) {
-      return await this.createPutUrlUpload(object, proposedUploadMethods.putUrl);
+      return await this.createPutUrlUpload(object, 'putUrl', proposedUploadMethods.putUrl);
     }
 
     return {};
@@ -85,7 +90,7 @@ class AwsBackend extends Backend {
     return { dataInline: true };
   }
 
-  async createPutUrlUpload(object, { contentType, contentLength }) {
+  async createPutUrlUpload(object, method, { contentType, contentLength, contentEncodings }) {
     const expires = taskcluster.fromNow(`${PUT_URL_EXPIRES_SECONDS} s`);
     const url = await this.s3.getSignedUrlPromise('putObject', {
       Bucket: this.config.bucket,
@@ -96,11 +101,30 @@ class AwsBackend extends Backend {
       Expires: PUT_URL_EXPIRES_SECONDS + 10, // 10s for clock skew
     });
 
+    let contentEncoding = 'identity';
+    // putUrl2 allows selecting a content-encoding.  We must ensure that the
+    // object can still be downloaded with `identity` encoding, and in most
+    // cases that means it must be uploaded with `identity` encoding.
+    if (method === 'putUrl2') {
+      // Google supports decompressive transcoding only from gzip:
+      // https://cloud.google.com/storage/docs/transcoding
+      if (this.isGoogle) {
+        if (-1 !== contentEncodings.indexOf('gzip')) {
+          contentEncoding = 'gzip';
+        }
+      }
+    }
+
     const headers = {
       'Content-Type': contentType,
-      'Content-Length': contentLength.toString(),
-      'Content-Encoding': 'identity',
+      'Content-Encoding': contentEncoding,
     };
+
+    // only set the Content-Length header if it is known; with a
+    // content-encoding, this is not known.
+    if (contentEncoding === 'identity') {
+      headers['Content-Length'] = contentLength.toString();
+    }
 
     // we want to force HTML files to have an "attachment" disposition, so that
     // browsers do not render them as "regular" web pages, which would open up
@@ -118,7 +142,7 @@ class AwsBackend extends Backend {
     }
 
     return {
-      putUrl: {
+      [method]: {
         url,
         expires: expires.toJSON(),
         headers,

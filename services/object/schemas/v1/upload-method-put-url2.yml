@@ -1,0 +1,64 @@
+$schema: "/schemas/common/metaschema.json#"
+title: "putUrl2 upload method"
+definitions:
+
+  request:
+    title: "`putUrl2` upload request"
+    description: |-
+      Request a URL to which a PUT request can be made.  This differs from
+      `putUrl` in that it supports content-encodings.
+    type: object
+    properties:
+      contentType:
+        type: string
+        description: Content-type of the data to be uploaded.
+      contentLength:
+        type: integer
+        description: Length, in bytes, of the uploaded data.
+      contentEncodings:
+        type: array
+        items: {type: string}
+        description: |-
+          Content-Encodings with which the caller can encode the data.  The 'identity'
+          encoding is implicitly included here.  The server will select an encoding
+          supported by the backend and include that in the `headers` property of the
+          response.
+    additionalProperties: false
+    required: [contentType, contentLength, contentEncodings]
+
+  response:
+    title: "`putUrl` upload response"
+    description: |-
+      Response containing a URL to which to PUT the data.
+    type: object
+    properties:
+      url:
+        type: string
+        format: uri
+        description: URL to which a PUT request should be made.
+      expires:
+        type: string
+        format: date-time
+        description: |-
+          Expiration time for the URL.  After this time, the client must
+          call `createUpload` again to get a fresh URL.
+      headers:
+        type: object
+        description: |-
+          Headers which must be included with the PUT request.  In many
+          cases, these are included in a signature embedded in the URL,
+          and must be provided verbatim.
+
+          The `Content-Length` header may be included here.  Many HTTP client
+          libraries will also set this directly when the length is known.  In
+          this case, the values should be identical, and the header should only
+          be specified once.
+
+          If `Content-Encoding` is included, the caller must use the given
+          encoding when making the PUT request.  The encoding will be
+          `identity` or one of the values provided in `contentEncodings` in the
+          request.
+        additionalProperties:
+          type: string
+    additionalProperties: false
+    required: [url, expires, headers]

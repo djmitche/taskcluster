@@ -44,6 +44,19 @@ If retries extend beyond this time, then the client should make a new `createUpl
 
 For this method, the content encoding _must_ be `identity`, and this is reflected in the `headers` property in the response body.
 
+### `putUrl2` Upload Method
+
+This method is similar to `putUrl`, with the addition of support for content encodings.
+
+The request is identical, with the addition of a `contentEncodings` property.
+This property allows uploaders to specify supported content-encodings (with `identity` implicitly always supported).
+The server selects a content-encoding and includes that in the `headers` property in the response.
+The caller must perform the selected encoding.
+
+The object service must always be able to respond to a simple download request with a URL for `identity`-encoded data.
+Some backends only support responding with the data as it was uploaded, including the content-encoding.
+For such backends, then, data must be uploaded and downloaded with the `identity` encoding, even if the uploader supports other encodings.
+
 ### `s3Multipart` Upload Method
 
 (TBD)

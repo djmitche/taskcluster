@@ -3,14 +3,18 @@ const request = require('superagent');
 const crypto = require('crypto');
 const assert = require('assert');
 const helper = require('../helper');
+const { promisify } = require('util');
+const zlib = require('zlib');
+
+const gzip = promisify(zlib.gzip);
 
 const responseSchema = 'https://tc-testing.example.com/schemas/object/v1/create-upload-response.json#/properties/uploadMethod';
 
 /**
- * Test the putUrl upload method on the given backend.  This defines a suite
+ * Test the putUrl2 upload method on the given backend.  This defines a suite
  * of tests.
  */
-exports.testPutUrlUpload = ({
+exports.testPutUrl2Upload = ({
   mock, skipping,
 
   // optional title suffix
@@ -25,17 +29,20 @@ exports.testPutUrlUpload = ({
   backendId,
 
   // an async function({name}) to get the data for a given object, returning {
-  // data, contentType, contentDisposition }.
+  // data, contentType, contentEncoding, contentDisposition }.
   getObjectContent,
 
   // omit testing certain functionality that's not supported on this backend; options:
   // - htmlContentDisposition -- enforcing content-disposition for text/html objects
   omit = [],
 
+  // if true, expect the backend to accept a gzip-encoded upload
+  supportsGzipUpload = false,
+
   // suiteDefinition defines the suite; add suiteSetup, suiteTeardown here, if
   // necessary, and any extra tests
 }, suiteDefinition) => {
-  suite(`putUrl upload method API${title ? `: ${title}` : ''}`, function() {
+  suite(`putUrl2 upload method API${title ? `: ${title}` : ''}`, function() {
     (suiteDefinition || (() => {})).call(this);
 
     let backend;
@@ -44,7 +51,7 @@ exports.testPutUrlUpload = ({
       backend = backends.get(backendId);
     });
 
-    const makeUpload = async ({ length = 256, contentType = 'application/random-bytes' } = {}) => {
+    const makeUpload = async ({ length = 256, contentType = 'application/random-bytes', contentEncodings = [] } = {}) => {
       const data = crypto.randomBytes(length);
       const name = helper.testObjectName(prefix);
       const expires = taskcluster.fromNow('1 hour');
@@ -54,7 +61,7 @@ exports.testPutUrlUpload = ({
       const [object] = await helper.db.fns.get_object_with_upload(name);
 
       const res = await backend.createUpload(object, {
-        putUrl: { contentType, contentLength: data.length },
+        putUrl2: { contentType, contentLength: data.length, contentEncodings },
       });
 
       await helper.assertSatisfiesSchema(res, responseSchema);
@@ -62,12 +69,22 @@ exports.testPutUrlUpload = ({
       return { name, data, res, uploadId, object };
     };
 
-    const performUpload = async ({ name, data, res, uploadId }) => {
-      assert(new Date(res.putUrl.expires) > new Date());
+    const performUpload = async ({ name, data, res, uploadId, expectGzipped }) => {
+      assert(new Date(res.putUrl2.expires) > new Date());
 
-      let req = request.put(res.putUrl.url);
-      for (let [h, v] of Object.entries(res.putUrl.headers)) {
+      let req = request.put(res.putUrl2.url);
+      let gzipped = false;
+      for (let [h, v] of Object.entries(res.putUrl2.headers)) {
+        if (h === 'Content-Encoding' && v === 'gzip') {
+          gzipped = true;
+        }
         req = req.set(h, v);
+      }
+      if (expectGzipped) {
+        assert(gzipped);
+      }
+      if (gzipped) {
+        data = await gzip(data);
       }
       const putRes = await req.send(data);
       assert(putRes.ok, putRes);
@@ -90,11 +107,27 @@ exports.testPutUrlUpload = ({
       });
     }
 
+    test(`upload an object allowing gzip`, async function() {
+      const { name, data, res, object, uploadId } = await makeUpload({
+        length: 1024,
+        contentEncodings: ['gzip'],
+      });
+      await performUpload({ name, data, res, uploadId, expectGzipped: supportsGzipUpload });
+      await finishUpload({ name, uploadId, object });
+
+      const stored = await getObjectContent({ name });
+      assert.equal(stored.contentType, 'application/random-bytes');
+      assert.deepEqual(stored.data, data);
+      if (supportsGzipUpload) {
+        assert.equal(stored.contentEncoding, 'gzip');
+      }
+    });
+
     test('upload an object with a bad Content-Type', async function() {
       const { data, res } = await makeUpload();
 
-      let req = request.put(res.putUrl.url);
-      for (let [h, v] of Object.entries(res.putUrl.headers)) {
+      let req = request.put(res.putUrl2.url);
+      for (let [h, v] of Object.entries(res.putUrl2.headers)) {
         req = req.set(h, v);
       }
       req.set('Content-Type', 'some-other/content-type');
